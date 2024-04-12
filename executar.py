@@ -5,7 +5,6 @@
 
 import threading
 import concurrent.futures
-import time
 
 def execute_script(script):
     import os
@@ -19,9 +18,6 @@ def run_server():
 # Inicia o servidor em uma thread separada
 server_thread = threading.Thread(target=run_server)
 server_thread.start()
-
-# Aguarda um momento para garantir que o servidor tenha iniciado antes de continuar
-time.sleep(3)
 
 # Executa os dois client.py simultaneamente
 print("Executando os clientes...")
