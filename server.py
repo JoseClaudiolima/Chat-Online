@@ -7,7 +7,6 @@ portas = []
 #porta entre 1024 a 49151
 #futuramente usar essa senha para permitir acesso
 def Create_chat(nmr_porta,senha,qtd_pessoas):
-    
     def comunicacao(socket_do_client_chat):
         client_socket_chat.append(socket_do_client_chat)
 
@@ -19,7 +18,8 @@ def Create_chat(nmr_porta,senha,qtd_pessoas):
                 for c in client_socket_chat:
                     try:
                         c.send(mensagem_do_chat.encode())
-                        #print(mensagem_do_chat) Para provar que a criptografia é de ponta a ponta
+                        #print(mensagem_do_chat) #Para provar que a criptografia é de ponta a ponta
+                        
                     except ConnectionError:
                         continue
             except ConnectionError:
@@ -48,7 +48,7 @@ def Create_chat(nmr_porta,senha,qtd_pessoas):
             client_handler_chat.start()
 
 
-def handle_client(client_socket):
+def escuta_solicitacao_primaria(client_socket):
     clients.append(client_socket)  
     while True:
         try:
@@ -83,7 +83,7 @@ def Pareamento_inicial():
 
         usuarios.append(addr[1])
 
-        client_handler = threading.Thread(target=handle_client, args=(client_socket,))
+        client_handler = threading.Thread(target=escuta_solicitacao_primaria, args=(client_socket,))
         client_handler.start()
     
 
