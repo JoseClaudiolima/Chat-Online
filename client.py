@@ -290,5 +290,5 @@ def Entrada():
     window.protocol("WM_DELETE_WINDOW", lambda: window.quit())  # Fechar janela principal sem erro
           
 
-if __name__ == '__main__': #Executa apenas quando é o arquivo é aberto 
-    Entrada()
+Entrada()
+

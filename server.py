@@ -87,5 +87,4 @@ def Pareamento_inicial():
         client_handler.start()
     
 
-if __name__ == '__main__':
-    Pareamento_inicial()
+Pareamento_inicial()
