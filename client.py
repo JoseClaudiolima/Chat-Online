@@ -150,43 +150,43 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga):
     nmr_porta, validação_a = Tratar_input(nmr_porta,'porta',window_antiga,True,False,False,5,4)
     if validação_a == True:
         senha, validação_b = Tratar_input(senha,'senha',window_antiga,True,True,True,8,3)
-    if validação_a == True and validação_b == True:
-        #Abaixo a gente manda para o server, a mensagem contendo os 3 parametros abaixo, para o chat criar um novo chat lá com base nessas info
-        message = f'{nmr_porta}+{senha}+{qtd_pessoas}'
-        connection.send(message.encode())
+        if validação_b == True:
+            #Abaixo a gente manda para o server, a mensagem contendo os 3 parametros abaixo, para o chat criar um novo chat lá com base nessas info
+            message = f'{nmr_porta}+{senha}+{qtd_pessoas}'
+            connection.send(message.encode())
 
-        cliente_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        cliente_socket.connect((ip_server, int(nmr_porta)))
-        
+            cliente_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            cliente_socket.connect((ip_server, int(nmr_porta)))
+            
 
-        chat_window = Gerenciar_Janela('Crie-Toplevel',
-                                    {'dimensoes': '800x500','alinhamento_tela': 'nenhum' },
-                                    f'Chat Online - {name} e #cliente que conecta junto')#colocar nome de quem conectou junto
+            chat_window = Gerenciar_Janela('Crie-Toplevel',
+                                        {'dimensoes': '800x500','alinhamento_tela': 'nenhum' },
+                                        f'Chat Online - {name} e #cliente que conecta junto')#colocar nome de quem conectou junto
 
-        chat_box = tk.Frame(chat_window)
-        input = tk.Frame(chat_window)
+            chat_box = tk.Frame(chat_window)
+            input = tk.Frame(chat_window)
 
-        chat_display = ttk.Text(chat_box,wrap='word',state='disabled',height=10,width=120)
-        chat_display.pack(side = 'left',padx=10)
-        # Configuração de tags para alinhamento
-        chat_display.tag_configure('right', justify='right')
-        chat_display.tag_configure('left', justify='left')
+            chat_display = ttk.Text(chat_box,wrap='word',state='disabled',height=10,width=120)
+            chat_display.pack(side = 'left',padx=10)
+            # Configuração de tags para alinhamento
+            chat_display.tag_configure('right', justify='right')
+            chat_display.tag_configure('left', justify='left')
 
-        scrollbar = ttk.Scrollbar(chat_box, command=chat_display.yview)
-        scrollbar.pack(side='right', padx=10, fill='y')  # fill='y' para preencher a altura disponível
+            scrollbar = ttk.Scrollbar(chat_box, command=chat_display.yview)
+            scrollbar.pack(side='right', padx=10, fill='y')  # fill='y' para preencher a altura disponível
 
-        message_input = ttk.Entry(input, width=30)
-        message_input.pack(side='left',padx=10)
+            message_input = ttk.Entry(input, width=30)
+            message_input.pack(side='left',padx=10)
 
-        send_button = ttk.Button(input, text="Enviar", command=Enviar_mensagem)
-        send_button.pack(side='left',padx=8)
+            send_button = ttk.Button(input, text="Enviar", command=Enviar_mensagem)
+            send_button.pack(side='left',padx=8)
 
-        clear_button = ttk.Button(input, text="Limpar", command=Limpar_chat)
-        clear_button.pack(side='left',padx=7)
+            clear_button = ttk.Button(input, text="Limpar", command=Limpar_chat)
+            clear_button.pack(side='left',padx=7)
 
-        chat_box.pack(fill='x', padx=10, pady=10)
-        input.pack(fill='x', padx=10, pady=10) 
-        threading.Thread(target=Receber_mensagens).start() 
+            chat_box.pack(fill='x', padx=10, pady=10)
+            input.pack(fill='x', padx=10, pady=10) 
+            threading.Thread(target=Receber_mensagens).start() 
 
 
 def direct_chat(box):
@@ -242,9 +242,15 @@ def Conectar_ao_servidor(name_entry,window_antiga):
                 connection.connect((ip_server, 3000))
 
                 Inicio()
-            except (ConnectionRefusedError, TimeoutError, OSError):
-                #Adicionar tela de erro
-                print(f'Ip de servidor está errado!')
+            except (ConnectionRefusedError, TimeoutError, OSError): #Tela de erro ao conectar ao ip do server
+                window.withdraw()
+                window_erro = Gerenciar_Janela('Crie',{'dimensoes' : '400x127', 'alinhamento_tela': 'centralizado'},"Aviso")
+                ttk.Label(window_erro,text='Aviso!!',font=('Arial',13, 'bold'),background='white').pack(pady=(5))
+                ttk.Label(window_erro,text='- Não foi possivel estabelecer a conexão com o servidor!',font=('Arial',11),wraplength=400,background='white').pack()
+                ttk.Label(window_erro,text='- Verifique se o ipv4 do servidor foi digitado corretamente!',font=('Arial',11),wraplength=400,background='white').pack()
+                window_erro.protocol("WM_DELETE_WINDOW", lambda:(
+                window.deiconify(),
+                window_erro.destroy() ))
             return
     
     global name #Levar essa verificação para outro lugar
