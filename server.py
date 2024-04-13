@@ -25,14 +25,15 @@ def Create_chat(nmr_porta,senha,qtd_pessoas):
                 continue
         return
     
-    server_pareamento_direto = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     if nmr_porta not in portas:  #Para impedir que crie/abra portas de numeros iguais
+        global server_pareamento_direto
+        server_pareamento_direto = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_pareamento_direto.bind((str(ipv4_address), int(nmr_porta)))
         server_pareamento_direto.listen(5)    
         portas.append(nmr_porta)
         print(f'Servidor aguardando conexões, em: {nmr_porta}')
 
-    while len(client_chat) <int(qtd_pessoas): #Esse looping é para: 'Trancar' o grupo chat, entre a quantidade de pessoas especificada
+    if len(client_chat) <int(qtd_pessoas): #Para: 'Trancar' o grupo chat, entre a quantidade de pessoas especificada
         client_socket_create_chat, addr = server_pareamento_direto.accept()
         print(f'Conexão recebida de {addr[0]}:{addr[1]} no chat {nmr_porta}')
         client_chat.append(addr[1])
