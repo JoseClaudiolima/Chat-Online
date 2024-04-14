@@ -2,7 +2,7 @@ import socket
 import threading
 import pyperclip
 
-usuarios_conexão_basica, portas = [], []
+usuarios_conexão_basica, portas = [], {}
 client_socket_chat, client_chat = [], []
 
 #porta entre 1024 a 49151
@@ -16,6 +16,8 @@ def Create_chat(nmr_porta,senha,qtd_pessoas,socket_primario_client):
                     client_socket_chat.remove(socket_do_client_chat)
                     socket_do_client_chat.close()
                     print('Usuario foi desconectado')
+                    if len(client_socket_chat) == 0:
+                        del portas[nmr_porta]
                     break
                 for c in client_socket_chat:
                     try:
@@ -32,20 +34,21 @@ def Create_chat(nmr_porta,senha,qtd_pessoas,socket_primario_client):
         server_pareamento_direto = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_pareamento_direto.bind((str(ipv4_address), int(nmr_porta)))
         server_pareamento_direto.listen(int(qtd_pessoas))    
-        portas.append(nmr_porta)
+        portas[nmr_porta] = senha
         print(f'Servidor aguardando conexões, em: {nmr_porta}')
-    else:
-        print('ja tem a porta')
 
     if len(client_socket_chat) <int(qtd_pessoas): #Para: 'Trancar' o grupo chat, entre a quantidade de pessoas especificada
-        socket_primario_client.send('Autorizado'.encode())
-        client_socket_create_chat, addr = server_pareamento_direto.accept()
-        print(f'Conexão recebida de ip:{addr[0]} porta do cliente:{addr[1]} no chat de porta: {nmr_porta}')
-        client_socket_chat.append(client_socket_create_chat)       
-        #Abaixo será criada uma thread para cada cliente que estará no chat, fazendo que esse cliente receba as mensagens por checagem própria
-        #Checar depois se é isso mesmo
-        client_thread_chat = threading.Thread(target=comunicacao, args=(client_socket_create_chat,))
-        client_thread_chat.start()
+        if senha == portas.get(nmr_porta): #portas[nmr_porta] = senha
+            socket_primario_client.send('Autorizado'.encode())
+            client_socket_create_chat, addr = server_pareamento_direto.accept()
+            print(f'Conexão recebida de ip:{addr[0]} porta do cliente:{addr[1]} no chat de porta: {nmr_porta}')
+            client_socket_chat.append(client_socket_create_chat)       
+            #Abaixo será criada uma thread para cada cliente que estará no chat, fazendo que esse cliente receba as mensagens por checagem própria
+            #Checar depois se é isso mesmo
+            client_thread_chat = threading.Thread(target=comunicacao, args=(client_socket_create_chat,))
+            client_thread_chat.start()
+        else:
+            print('Senha do usuario está errada!')
     else:
         print('Servidor cheio')
 
