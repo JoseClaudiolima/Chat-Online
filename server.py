@@ -7,7 +7,7 @@ client_socket_chat, client_chat = [], []
 
 #porta entre 1024 a 49151
 #futuramente usar essa senha para permitir acesso
-def Create_chat(nmr_porta,senha,qtd_pessoas):
+def Create_chat(nmr_porta,senha,qtd_pessoas,socket_primario_client):
     def comunicacao(socket_do_client_chat):
         while True: #Esse looping é para: Receber as mensagens pelos clientes e enviar a todos do grupo
             try:
@@ -34,11 +34,13 @@ def Create_chat(nmr_porta,senha,qtd_pessoas):
         server_pareamento_direto.listen(int(qtd_pessoas))    
         portas.append(nmr_porta)
         print(f'Servidor aguardando conexões, em: {nmr_porta}')
+    else:
+        print('ja tem a porta')
 
     if len(client_socket_chat) <int(qtd_pessoas): #Para: 'Trancar' o grupo chat, entre a quantidade de pessoas especificada
+        socket_primario_client.send('Autorizado'.encode())
         client_socket_create_chat, addr = server_pareamento_direto.accept()
-        client_socket_create_chat.send('Conexão feita'.encode())
-        print(f'Conexão recebida de ip:{addr[0]} portacliente:{addr[1]} no chat de porta: {nmr_porta}')
+        print(f'Conexão recebida de ip:{addr[0]} porta do cliente:{addr[1]} no chat de porta: {nmr_porta}')
         client_socket_chat.append(client_socket_create_chat)       
         #Abaixo será criada uma thread para cada cliente que estará no chat, fazendo que esse cliente receba as mensagens por checagem própria
         #Checar depois se é isso mesmo
@@ -57,7 +59,7 @@ def escuta_solicitacao_primaria(client_socket,id_cliente):
             if not mensagem:
                 break
             msg = mensagem.split('+') 
-            Create_chat(msg[0],msg[1],msg[2]) # nmr_porta,senha,qtd_pessoas
+            Create_chat(msg[0],msg[1],msg[2],client_socket) # nmr_porta,senha,qtd_pessoas
         except ConnectionError:
             break
 

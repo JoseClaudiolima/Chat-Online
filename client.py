@@ -172,27 +172,25 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga):
             message = f'{nmr_porta}+{senha}+{qtd_pessoas}'
             connection.send(message.encode())
 
-            cliente_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            conexao_validacao = False  # Tive >>>>>MUITA<<<<< dificuldade para consertar esse bug, fiz desse modo mesmo por enquanto, se não vai travar todo o projeto
-                                       # Detalhe do bug em questão: mesmo com o servidor rejeitando a conexão, caso o grupo esteja cheio de outros usuarios, o usuario que tenta entrar no grupo cheio trava completamente na linha "cliente_socket.connect((ip_server, int(nmr_porta)))" e "mensagem_teste = cliente_socket.recv(1024).decode()"
-            try: 
-                cliente_socket.connect((ip_server, int(nmr_porta)))
-                cliente_socket.settimeout(4) #Escuta por 4s se conseguiu fazer conexão com o server
-                escutando = True
-                while escutando: 
-                    try:
-                        mensagem_teste = cliente_socket.recv(1024).decode()
-                        if mensagem_teste == 'Conexão feita':
-                            conexao_validacao = True
-                            cliente_socket.settimeout(None)        
-                            escutando = False
-                    except (ConnectionError,ConnectionRefusedError, TimeoutError, OSError, BlockingIOError, socket.error, socket.timeout) as a:
-                        print(f'Erro: {a}') #Pode apagar isso antes de entregar a aps
-                        cliente_socket.close()
+            escutando = True
+            connection.settimeout(4) #Escuta por no maximo 4s se conseguiu fazer conexão com o server
+            while escutando: #Isso aqui é para ver se o servidor aceita mais uma conexão no chat, ou se já esta cheio ou se a senha está errada
+                try:
+                    confirmacao = connection.recv(1024).decode()
+                    if confirmacao == 'Autorizado':
                         escutando = False
+                        conexao_validacao = True
+                        break
+                except (ConnectionError,ConnectionRefusedError, TimeoutError, OSError, BlockingIOError, socket.error, socket.timeout) as a:
+                        print(f'Erro: {a}') #Pode apagar isso antes de entregar a aps
+                        escutando = False
+                        conexao_validacao = False
                         return
-            except (ConnectionError,ConnectionRefusedError, TimeoutError, OSError, BlockingIOError, socket.error, socket.timeout):
-                return                
+            connection.settimeout(None) #Desfaz o escuta até no max 4s    
+
+            cliente_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            cliente_socket.connect((ip_server, int(nmr_porta)))
+              
             
             if conexao_validacao == True:
                 chat_window = Gerenciar_Janela('Crie-Toplevel',
@@ -225,6 +223,8 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga):
                 Thread_receber = threading.Thread(target=Receber_mensagens)
                 Thread_receber.start()
                 chat_window.protocol("WM_DELETE_WINDOW", lambda: Fechar_janela_chat())
+            else:
+                cliente_socket.close()
 
 
 def direct_chat(box):
