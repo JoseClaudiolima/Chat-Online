@@ -9,11 +9,13 @@ client_socket_chat, client_chat = [], []
 #futuramente usar essa senha para permitir acesso
 def Create_chat(nmr_porta,senha,qtd_pessoas):
     def comunicacao(socket_do_client_chat):
-        client_socket_chat.append(socket_do_client_chat)
         while True: #Esse looping é para: Receber as mensagens pelos clientes e enviar a todos do grupo
             try:
                 mensagem_do_chat = socket_do_client_chat.recv(1024).decode()
-                if not mensagem_do_chat:
+                if mensagem_do_chat == "Protocolo_close":
+                    client_socket_chat.remove(socket_do_client_chat)
+                    socket_do_client_chat.close()
+                    print('Usuario foi desconectado')
                     break
                 for c in client_socket_chat:
                     try:
@@ -29,18 +31,21 @@ def Create_chat(nmr_porta,senha,qtd_pessoas):
         global server_pareamento_direto
         server_pareamento_direto = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_pareamento_direto.bind((str(ipv4_address), int(nmr_porta)))
-        server_pareamento_direto.listen(5)    
+        server_pareamento_direto.listen(int(qtd_pessoas))    
         portas.append(nmr_porta)
         print(f'Servidor aguardando conexões, em: {nmr_porta}')
 
-    if len(client_chat) <int(qtd_pessoas): #Para: 'Trancar' o grupo chat, entre a quantidade de pessoas especificada
+    if len(client_socket_chat) <int(qtd_pessoas): #Para: 'Trancar' o grupo chat, entre a quantidade de pessoas especificada
         client_socket_create_chat, addr = server_pareamento_direto.accept()
-        print(f'Conexão recebida de {addr[0]}:{addr[1]} no chat {nmr_porta}')
-        client_chat.append(addr[1])
+        client_socket_create_chat.send('Conexão feita'.encode())
+        print(f'Conexão recebida de ip:{addr[0]} portacliente:{addr[1]} no chat de porta: {nmr_porta}')
+        client_socket_chat.append(client_socket_create_chat)       
         #Abaixo será criada uma thread para cada cliente que estará no chat, fazendo que esse cliente receba as mensagens por checagem própria
         #Checar depois se é isso mesmo
         client_thread_chat = threading.Thread(target=comunicacao, args=(client_socket_create_chat,))
         client_thread_chat.start()
+    else:
+        print('Servidor cheio')
 
 def escuta_solicitacao_primaria(client_socket,id_cliente):
     usuarios_conexão_basica.append(client_socket)

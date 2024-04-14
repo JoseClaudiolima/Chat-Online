@@ -22,4 +22,4 @@ server_thread.start()
 # Executa os dois client.py simultaneamente
 print("Executando os clientes...")
 with concurrent.futures.ThreadPoolExecutor() as executor:
-    executor.map(execute_script, ["client.py", "client.py"])
+    executor.map(execute_script, ["client.py", "client.py", "client.py"])

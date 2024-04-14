@@ -5,6 +5,7 @@ import ttkbootstrap as ttk
 import socket
 import threading
 import math
+import time
 
 #Passo 1: Coloque o nome
 #Passo 2: Coloque o ipv4 do server, aparece no terminal do server.py
@@ -112,7 +113,18 @@ def Tratar_input(string,id,window_antiga,pode_numero,pode_char_esp,pode_char_alf
 
 
 def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga):
-    def Enviar_mensagem():
+    def Fechar_janela_chat():
+        chat_window.destroy() #Isso aqui destroy a chat_window apenas na primeira thread
+        msg_close = "Protocolo_close"
+        Enviar_mensagem(msg_close) #Avisa ao server, que o client desconectou
+        Thread_receber.join()
+        time.sleep(1) #Coloquei isso para resolver um bug em que era enviado a msg ao server que fechou a conexão, porém a msg nem chegava ao server, e a linha cliente_socket.close(), já fechava o socket antes da msg chegar no server 
+        cliente_socket.close() #Cliente se desconecta de fato
+
+    def Enviar_mensagem(msg=None):
+        if msg == "Protocolo_close":
+            cliente_socket.send(msg.encode())
+            return
         mensagem = f"{message_input.get()} {format(math.pi, '.10f')} {name}"
         if mensagem:
             cifra = rsa.cifrar(mensagem,28837,40301) #Está com chave já selecionada, podemos aleatorizar depois
@@ -120,21 +132,26 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga):
             message_input.delete(0, tk.END)
 
     def Receber_mensagens():
-        while True:
+        rodar = True
+        while rodar:
             try:
                 mensagem = cliente_socket.recv(1024).decode()
                 msg_decifrada = rsa.decifrar(mensagem,40301,12973) #Está com chave já selecionada, podemos aleatorizar depois
                 msg_decifrada = msg_decifrada.split(f" {format(math.pi, '.10f')} ")
-                if msg_decifrada[0]:
-                    nome = msg_decifrada[1]
-                    chat_display.configure(state='normal')
+                if msg_decifrada[0]: #No comando abaixo, pode-se estudar melhor sobre thread em python, para resolver de outro jeito
+                    if chat_window.winfo_exists(): #Checa se ainda existe o chat_window, pode ter sido fechado pela primeira tread 
+                        
+                        nome = msg_decifrada[1]
+                        chat_display.configure(state='normal')
 
-                    if nome == name:
-                        chat_display.insert(tk.END, f'{msg_decifrada[0]}\n', 'right')
+                        if nome == name:
+                            chat_display.insert(tk.END, f'{msg_decifrada[0]}\n', 'right')
+                        else:
+                            chat_display.insert(tk.END, f'{nome}: {msg_decifrada[0]}\n', 'left')
+                        Scroll_to_bottom()
+                        chat_display.configure(state='disabled')
                     else:
-                        chat_display.insert(tk.END, f'{nome}: {msg_decifrada[0]}\n', 'left')
-                    Scroll_to_bottom()
-                    chat_display.configure(state='disabled')
+                        rodar = False
             except ConnectionError:
                 break
 
@@ -156,37 +173,58 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga):
             connection.send(message.encode())
 
             cliente_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            cliente_socket.connect((ip_server, int(nmr_porta)))
+            conexao_validacao = False  # Tive >>>>>MUITA<<<<< dificuldade para consertar esse bug, fiz desse modo mesmo por enquanto, se não vai travar todo o projeto
+                                       # Detalhe do bug em questão: mesmo com o servidor rejeitando a conexão, caso o grupo esteja cheio de outros usuarios, o usuario que tenta entrar no grupo cheio trava completamente na linha "cliente_socket.connect((ip_server, int(nmr_porta)))" e "mensagem_teste = cliente_socket.recv(1024).decode()"
+            try: 
+                cliente_socket.connect((ip_server, int(nmr_porta)))
+                cliente_socket.settimeout(4) #Escuta por 4s se conseguiu fazer conexão com o server
+                escutando = True
+                while escutando: 
+                    try:
+                        mensagem_teste = cliente_socket.recv(1024).decode()
+                        if mensagem_teste == 'Conexão feita':
+                            conexao_validacao = True
+                            cliente_socket.settimeout(None)        
+                            escutando = False
+                    except (ConnectionError,ConnectionRefusedError, TimeoutError, OSError, BlockingIOError, socket.error, socket.timeout) as a:
+                        print(f'Erro: {a}') #Pode apagar isso antes de entregar a aps
+                        cliente_socket.close()
+                        escutando = False
+                        return
+            except (ConnectionError,ConnectionRefusedError, TimeoutError, OSError, BlockingIOError, socket.error, socket.timeout):
+                return                
             
+            if conexao_validacao == True:
+                chat_window = Gerenciar_Janela('Crie-Toplevel',
+                                            {'dimensoes': '800x500','alinhamento_tela': 'nenhum' },
+                                            f'Chat Online - {name} e #cliente que conecta junto')#colocar nome de quem conectou junto
 
-            chat_window = Gerenciar_Janela('Crie-Toplevel',
-                                        {'dimensoes': '800x500','alinhamento_tela': 'nenhum' },
-                                        f'Chat Online - {name} e #cliente que conecta junto')#colocar nome de quem conectou junto
+                chat_box = tk.Frame(chat_window)
+                input = tk.Frame(chat_window)
 
-            chat_box = tk.Frame(chat_window)
-            input = tk.Frame(chat_window)
+                chat_display = ttk.Text(chat_box,wrap='word',state='disabled',height=10,width=120)
+                chat_display.pack(side = 'left',padx=10)
+                # Configuração de tags para alinhamento
+                chat_display.tag_configure('right', justify='right')
+                chat_display.tag_configure('left', justify='left')
 
-            chat_display = ttk.Text(chat_box,wrap='word',state='disabled',height=10,width=120)
-            chat_display.pack(side = 'left',padx=10)
-            # Configuração de tags para alinhamento
-            chat_display.tag_configure('right', justify='right')
-            chat_display.tag_configure('left', justify='left')
+                scrollbar = ttk.Scrollbar(chat_box, command=chat_display.yview)
+                scrollbar.pack(side='right', padx=10, fill='y')  # fill='y' para preencher a altura disponível
 
-            scrollbar = ttk.Scrollbar(chat_box, command=chat_display.yview)
-            scrollbar.pack(side='right', padx=10, fill='y')  # fill='y' para preencher a altura disponível
+                message_input = ttk.Entry(input, width=30)
+                message_input.pack(side='left',padx=10)
 
-            message_input = ttk.Entry(input, width=30)
-            message_input.pack(side='left',padx=10)
+                send_button = ttk.Button(input, text="Enviar", command=Enviar_mensagem)
+                send_button.pack(side='left',padx=8)
 
-            send_button = ttk.Button(input, text="Enviar", command=Enviar_mensagem)
-            send_button.pack(side='left',padx=8)
+                clear_button = ttk.Button(input, text="Limpar", command=Limpar_chat)
+                clear_button.pack(side='left',padx=7)
 
-            clear_button = ttk.Button(input, text="Limpar", command=Limpar_chat)
-            clear_button.pack(side='left',padx=7)
-
-            chat_box.pack(fill='x', padx=10, pady=10)
-            input.pack(fill='x', padx=10, pady=10) 
-            threading.Thread(target=Receber_mensagens).start() 
+                chat_box.pack(fill='x', padx=10, pady=10)
+                input.pack(fill='x', padx=10, pady=10) 
+                Thread_receber = threading.Thread(target=Receber_mensagens)
+                Thread_receber.start()
+                chat_window.protocol("WM_DELETE_WINDOW", lambda: Fechar_janela_chat())
 
 
 def direct_chat(box):
