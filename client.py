@@ -1,4 +1,5 @@
 from Lib import CriptografiaRSA as rsa
+from Lib import Emoticons
 
 import tkinter as tk
 import ttkbootstrap as ttk
@@ -6,6 +7,8 @@ import socket
 import threading
 import math
 import time
+import os
+import emoji
 
 #Passo 1: Coloque o nome
 #Passo 2: Coloque o ipv4 do server, aparece no terminal do server.py
@@ -154,11 +157,30 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
                         
                         nome = msg_decifrada[1]
                         chat_display.configure(state='normal')
+                        msg_texto = emoji.emojize(msg_decifrada[0])
 
-                        if nome == name:
-                            chat_display.insert(tk.END, f'{msg_decifrada[0]}\n', 'right')
+                        if nome == name: 
+                            for i in msg_texto:
+                                if emoji.is_emoji(i):
+                                    chat_display.insert(tk.END, i, 'right emoticon_tag')
+                                else:
+                                    chat_display.insert(tk.END, i, 'right')
+                            chat_display.insert(tk.END, '\n', 'right')
                         else:
-                            chat_display.insert(tk.END, f'{nome}: {msg_decifrada[0]}\n', 'left')
+                            primeira_iteracao = True
+                            for i in msg_texto:
+                                if primeira_iteracao == True:
+                                    if emoji.is_emoji(i):
+                                        chat_display.insert(tk.END, f'{nome}: {i}', 'left emoticon_tag')
+                                    else:
+                                        chat_display.insert(tk.END, f'{nome}: {i}', 'left')
+                                    primeira_iteracao = False
+                                else:
+                                    if emoji.is_emoji(i):
+                                        chat_display.insert(tk.END, i, 'left emoticon_tag')
+                                    else:
+                                        chat_display.insert(tk.END, i, 'left')
+                            chat_display.insert(tk.END, '\n', 'left')
                         Scroll_to_bottom()
                         chat_display.configure(state='disabled')
                     else:
@@ -174,6 +196,16 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
     def Scroll_to_bottom():
         """Rola o chat para baixo."""
         chat_display.yview_moveto(1.0)
+
+    def abrir_widget_emoji(event=None):
+        # Criar uma nova janela
+        #nova_janela = tk.Toplevel(root)
+        #nova_janela.title("Novo Widget")
+        
+        # Adicionar conteúdo à nova janela
+        #label = ttk.Label(nova_janela, text="Este é um novo widget!")
+        #label.pack(padx=20, pady=20)
+        print('cliquei')
 
     nmr_porta, validação_a = Tratar_input(nmr_porta,'porta',window_antiga,True,False,False,5,4)
     if validação_a == True:
@@ -238,11 +270,12 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
                 chat_box = tk.Frame(chat_window)
                 input = tk.Frame(chat_window)
 
-                chat_display = ttk.Text(chat_box,wrap='word',state='disabled',height=10,width=120)
+                chat_display = ttk.Text(chat_box,font=("Arial", 12),wrap='word',state='disabled',height=10,width=120)
                 chat_display.pack(side = 'left',padx=10)
                 # Configuração de tags para alinhamento
                 chat_display.tag_configure('right', justify='right')
                 chat_display.tag_configure('left', justify='left')
+                chat_display.tag_configure('emoticon_tag', font=('Arial',16))
 
                 scrollbar = ttk.Scrollbar(chat_box, command=chat_display.yview)
                 scrollbar.pack(side='right', padx=10, fill='y')  # fill='y' para preencher a altura disponível
@@ -250,8 +283,20 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
                 message_input = ttk.Entry(input, width=30)
                 message_input.pack(side='left',padx=10)
 
+
+
+                # Criar o botão com a imagem
+                emoji_text = emoji.emojize(':slightly_smiling_face:')
+
+                emoji_label = ttk.Label(input, text=emoji_text,font=('Arial',32))
+                emoji_label.pack(side='left')
+                emoji_label.bind("<Button-1>", abrir_widget_emoji)
+
+                
+
                 send_button = ttk.Button(input, text="Enviar", command=Enviar_mensagem)
                 send_button.pack(side='left',padx=8)
+                message_input.bind("<Return>", lambda event: send_button.invoke())
 
                 clear_button = ttk.Button(input, text="Limpar", command=Limpar_chat)
                 clear_button.pack(side='left',padx=7)
