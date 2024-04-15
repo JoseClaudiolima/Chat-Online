@@ -15,6 +15,17 @@ import time
 
 #comando = 'Crie', Delete e crie, Crie-Toplevel
 run = []
+
+def Tratar_janela_erro(window_antiga,dimensoes,qtd_label,text_l,font_l,pady_l):
+    window_antiga.withdraw()
+    window_erro = Gerenciar_Janela('Crie',{'dimensoes' : dimensoes, 'alinhamento_tela': 'centralizado'},"Aviso")
+    for i in range(qtd_label):
+        ttk.Label(window_erro,text=f'{text_l[i]}',font=font_l[i],background='white').pack(pady=pady_l[i])
+    window_erro.protocol("WM_DELETE_WINDOW", lambda:(
+    window_antiga.deiconify(),
+    window_erro.destroy() ))
+
+
 def Gerenciar_Janela(comando,config_janela,titulo,window_reserva=None):
     def Destroir_widgets():
         for widget in window.winfo_children():
@@ -59,7 +70,7 @@ def Gerenciar_Janela(comando,config_janela,titulo,window_reserva=None):
        
         window_Toplevel = Janela_title_geometry(window_Toplevel,config_janela)  
         return window_Toplevel
-
+ 
 
 def Tratar_input(string,id,window_antiga,pode_numero,pode_char_esp,pode_char_alfa,limite_max_char,limite_min_char):
     validação = True
@@ -181,52 +192,32 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
                         escutando = False
                         conexao_validacao = True
                         break
-                    elif confirmacao == 'Recusado, Grupo nao criado':
+                    elif confirmacao == 'Recusado, Grupo nao existe':
                         escutando = False
                         conexao_validacao = False
-                        window_antiga.withdraw()
-                        window_erro = Gerenciar_Janela('Crie',{'dimensoes' : '400x127', 'alinhamento_tela': 'centralizado'},"Aviso")
-                        ttk.Label(window_erro,text='Aviso!!',font=('Arial',13, 'bold'),background='white').pack(pady=(5))
-                        ttk.Label(window_erro,text='- O grupo em questão ainda não foi criado!',font=('Arial',11),wraplength=400,background='white').pack()
-                        window_erro.protocol("WM_DELETE_WINDOW", lambda:(
-                        window_antiga.deiconify(),
-                        window_erro.destroy() ))
+                        Tratar_janela_erro(window_antiga, '400x127', 2, ['Aviso!!','- O grupo em questão não existe!']
+                                           , [('Arial',13, 'bold'),('Arial',11)] , [(5),(0)])
                         Inicio()
                         return
                     elif confirmacao == 'Recusado, Grupo esta cheio':
                         escutando = False
                         conexao_validacao = False
-                        window_antiga.withdraw()
-                        window_erro = Gerenciar_Janela('Crie',{'dimensoes' : '400x127', 'alinhamento_tela': 'centralizado'},"Aviso")
-                        ttk.Label(window_erro,text='Aviso!!',font=('Arial',13, 'bold'),background='white').pack(pady=(5))
-                        ttk.Label(window_erro,text='- O grupo em questão está cheio!',font=('Arial',11),wraplength=400,background='white').pack()
-                        window_erro.protocol("WM_DELETE_WINDOW", lambda:(
-                        window_antiga.deiconify(),
-                        window_erro.destroy() ))
+                        Tratar_janela_erro(window_antiga, '400x127', 2, ['Aviso!!','- O grupo em questão está cheio!']
+                                           , [('Arial',13, 'bold'),('Arial',11)] , [(5),(0)])
                         Inicio()
                         return
                     elif confirmacao == 'Recusado, Grupo já criado':
                         escutando = False
                         conexao_validacao = False
-                        window_antiga.withdraw()
-                        window_erro = Gerenciar_Janela('Crie',{'dimensoes' : '400x127', 'alinhamento_tela': 'centralizado'},"Aviso")
-                        ttk.Label(window_erro,text='Aviso!!',font=('Arial',13, 'bold'),background='white').pack(pady=(5))
-                        ttk.Label(window_erro,text='- O grupo em questão já foi criado!',font=('Arial',11),wraplength=400,background='white').pack()
-                        window_erro.protocol("WM_DELETE_WINDOW", lambda:(
-                        window_antiga.deiconify(),
-                        window_erro.destroy() ))
+                        Tratar_janela_erro(window_antiga, '400x127', 2, ['Aviso!!','- O grupo em questão já foi criado!']
+                                           , [('Arial',13, 'bold'),('Arial',11)] , [(5),(0)])
                         Inicio()
                         return
                     elif confirmacao == 'Recusado, senha está errada!':
                         escutando = False
                         conexao_validacao = False
-                        window_antiga.withdraw()
-                        window_erro = Gerenciar_Janela('Crie',{'dimensoes' : '400x127', 'alinhamento_tela': 'centralizado'},"Aviso")
-                        ttk.Label(window_erro,text='Aviso!!',font=('Arial',13, 'bold'),background='white').pack(pady=(5))
-                        ttk.Label(window_erro,text='- A senha está incorreta!',font=('Arial',11),wraplength=400,background='white').pack()
-                        window_erro.protocol("WM_DELETE_WINDOW", lambda:(
-                        window_antiga.deiconify(),
-                        window_erro.destroy() ))
+                        Tratar_janela_erro(window_antiga, '400x127', 2, ['Aviso!!','- A senha está incorreta!']
+                                           , [('Arial',13, 'bold'),('Arial',11)] , [(5),(0)])
                         return
                 except (ConnectionError,ConnectionRefusedError, TimeoutError, OSError, BlockingIOError, socket.error, socket.timeout) as a:
                         print(f'Erro: {a}') #Pode apagar isso antes de entregar a aps
@@ -341,15 +332,11 @@ def Conectar_ao_servidor(name_entry,window_antiga):
                 connection.connect((ip_server, 3000))
 
                 Inicio()
-            except (ConnectionRefusedError, TimeoutError, OSError): #Tela de erro ao conectar ao ip do server
-                window.withdraw()
-                window_erro = Gerenciar_Janela('Crie',{'dimensoes' : '400x127', 'alinhamento_tela': 'centralizado'},"Aviso")
-                ttk.Label(window_erro,text='Aviso!!',font=('Arial',13, 'bold'),background='white').pack(pady=(5))
-                ttk.Label(window_erro,text='- Não foi possivel estabelecer a conexão com o servidor!',font=('Arial',11),wraplength=400,background='white').pack()
-                ttk.Label(window_erro,text='- Verifique se o ipv4 do servidor foi digitado corretamente!',font=('Arial',11),wraplength=400,background='white').pack()
-                window_erro.protocol("WM_DELETE_WINDOW", lambda:(
-                window.deiconify(),
-                window_erro.destroy() ))
+            except (ConnectionRefusedError, TimeoutError, OSError) as e: #Tela de erro ao conectar ao ip do server
+                #Tratar_janela_erro(window_antiga,dimensoes,qtd_label,text_l,font_l,pady_l):
+                Tratar_janela_erro(window,'400x127',3,['Aviso!!','- Não foi possivel estabelecer a conexão com o servidor!','- Verifique se o ipv4 do servidor foi digitado corretamente!'],
+                                   [('Arial',13, 'bold'),('Arial',11),('Arial',11)],
+                                   [(5),(0),(0)])
             return
     
     global name #Levar essa verificação para outro lugar

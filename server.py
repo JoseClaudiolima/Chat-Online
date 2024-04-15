@@ -15,7 +15,6 @@ def Create_chat(nmr_porta,senha,qtd_pessoas,pedido,socket_primario_client):
                 if mensagem_do_chat == "Protocolo_close":
                     client_socket_chat.remove(socket_do_client_chat)
                     socket_do_client_chat.close()
-                    print('Usuario foi desconectado')
                     if len(client_socket_chat) == 0:
                         del portas[nmr_porta]
                     break
@@ -31,13 +30,12 @@ def Create_chat(nmr_porta,senha,qtd_pessoas,pedido,socket_primario_client):
     
 
     if (nmr_porta not in portas) and pedido == 'entrar grupo': #Tratamento de erro
-        socket_primario_client.send('Recusado, Grupo nao criado'.encode())
+        socket_primario_client.send('Recusado, Grupo nao existe'.encode())
         return
-    if (nmr_porta in portas) and pedido == 'criar grupo':
+    elif (nmr_porta in portas) and pedido == 'criar grupo':
         socket_primario_client.send('Recusado, Grupo já criado'.encode())
         return
     
-    print(f'antes: {portas} e {nmr_porta not in portas}, nmr porta: {nmr_porta}')
     if nmr_porta not in portas:  #Para impedir que crie/abra portas de numeros iguais
         global server_pareamento_direto
         server_pareamento_direto = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -46,7 +44,6 @@ def Create_chat(nmr_porta,senha,qtd_pessoas,pedido,socket_primario_client):
         #portas[nmr_porta] = senha
         portas[nmr_porta] = [senha, qtd_pessoas]
         print(f'Servidor aguardando conexões, em: {nmr_porta}')
-    print(f'depois: {portas}')
 
     if (nmr_porta in portas) and len(client_socket_chat) <int(portas[nmr_porta][1]) : #Para: 'Trancar' o grupo chat, entre a quantidade de pessoas especificada
         if portas[nmr_porta][0] == senha: #portas[nmr_porta] = senha
@@ -60,10 +57,8 @@ def Create_chat(nmr_porta,senha,qtd_pessoas,pedido,socket_primario_client):
             client_thread_chat.start()
         else:
             socket_primario_client.send('Recusado, senha está errada!'.encode())
-            print('Senha do usuario está errada!')
     else:
         socket_primario_client.send('Recusado, Grupo esta cheio'.encode())
-        print('Servidor cheio')
 
 def escuta_solicitacao_primaria(client_socket,id_cliente):
     usuarios_conexão_basica.append(client_socket)
