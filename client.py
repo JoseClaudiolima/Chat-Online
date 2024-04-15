@@ -112,7 +112,7 @@ def Tratar_input(string,id,window_antiga,pode_numero,pode_char_esp,pode_char_alf
     return string, True
 
 
-def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga):
+def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
     def Fechar_janela_chat():
         chat_window.destroy() #Isso aqui destroy a chat_window apenas na primeira thread
         msg_close = "Protocolo_close"
@@ -169,7 +169,7 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga):
         senha, validação_b = Tratar_input(senha,'senha',window_antiga,True,True,True,8,3)
         if validação_b == True:
             #Abaixo a gente manda para o server, a mensagem contendo os 3 parametros abaixo, para o chat criar um novo chat lá com base nessas info
-            message = f'{nmr_porta}+{senha}+{qtd_pessoas}'
+            message = f'{nmr_porta}+{senha}+{qtd_pessoas}+{pedido}'
             connection.send(message.encode())
 
             escutando = True
@@ -181,6 +181,53 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga):
                         escutando = False
                         conexao_validacao = True
                         break
+                    elif confirmacao == 'Recusado, Grupo nao criado':
+                        escutando = False
+                        conexao_validacao = False
+                        window_antiga.withdraw()
+                        window_erro = Gerenciar_Janela('Crie',{'dimensoes' : '400x127', 'alinhamento_tela': 'centralizado'},"Aviso")
+                        ttk.Label(window_erro,text='Aviso!!',font=('Arial',13, 'bold'),background='white').pack(pady=(5))
+                        ttk.Label(window_erro,text='- O grupo em questão ainda não foi criado!',font=('Arial',11),wraplength=400,background='white').pack()
+                        window_erro.protocol("WM_DELETE_WINDOW", lambda:(
+                        window_antiga.deiconify(),
+                        window_erro.destroy() ))
+                        Inicio()
+                        return
+                    elif confirmacao == 'Recusado, Grupo esta cheio':
+                        escutando = False
+                        conexao_validacao = False
+                        window_antiga.withdraw()
+                        window_erro = Gerenciar_Janela('Crie',{'dimensoes' : '400x127', 'alinhamento_tela': 'centralizado'},"Aviso")
+                        ttk.Label(window_erro,text='Aviso!!',font=('Arial',13, 'bold'),background='white').pack(pady=(5))
+                        ttk.Label(window_erro,text='- O grupo em questão está cheio!',font=('Arial',11),wraplength=400,background='white').pack()
+                        window_erro.protocol("WM_DELETE_WINDOW", lambda:(
+                        window_antiga.deiconify(),
+                        window_erro.destroy() ))
+                        Inicio()
+                        return
+                    elif confirmacao == 'Recusado, Grupo já criado':
+                        escutando = False
+                        conexao_validacao = False
+                        window_antiga.withdraw()
+                        window_erro = Gerenciar_Janela('Crie',{'dimensoes' : '400x127', 'alinhamento_tela': 'centralizado'},"Aviso")
+                        ttk.Label(window_erro,text='Aviso!!',font=('Arial',13, 'bold'),background='white').pack(pady=(5))
+                        ttk.Label(window_erro,text='- O grupo em questão já foi criado!',font=('Arial',11),wraplength=400,background='white').pack()
+                        window_erro.protocol("WM_DELETE_WINDOW", lambda:(
+                        window_antiga.deiconify(),
+                        window_erro.destroy() ))
+                        Inicio()
+                        return
+                    elif confirmacao == 'Recusado, senha está errada!':
+                        escutando = False
+                        conexao_validacao = False
+                        window_antiga.withdraw()
+                        window_erro = Gerenciar_Janela('Crie',{'dimensoes' : '400x127', 'alinhamento_tela': 'centralizado'},"Aviso")
+                        ttk.Label(window_erro,text='Aviso!!',font=('Arial',13, 'bold'),background='white').pack(pady=(5))
+                        ttk.Label(window_erro,text='- A senha está incorreta!',font=('Arial',11),wraplength=400,background='white').pack()
+                        window_erro.protocol("WM_DELETE_WINDOW", lambda:(
+                        window_antiga.deiconify(),
+                        window_erro.destroy() ))
+                        return
                 except (ConnectionError,ConnectionRefusedError, TimeoutError, OSError, BlockingIOError, socket.error, socket.timeout) as a:
                         print(f'Erro: {a}') #Pode apagar isso antes de entregar a aps
                         escutando = False
@@ -227,11 +274,10 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga):
                 cliente_socket.close()
 
 
-def direct_chat(box):
+def config_chat(box,qtd_pessoas,dimensoes,diplomacia):
     window = Gerenciar_Janela('Delete e crie',
-                     {'dimensoes' : '300x200', 'alinhamento_tela': 'centralizado'}, #Alterar largura
-                     'Configuração - Chat-direto')
-    
+                     {'dimensoes' : dimensoes, 'alinhamento_tela': 'centralizado'}, #Alterar largura
+                     'Configuração - Chat')
     box = tk.Frame(window)
     box.pack()    
     box2 = tk.Frame(box)
@@ -240,33 +286,48 @@ def direct_chat(box):
     box3.pack()
 
 
-    label_porta = ttk.Label(box2,text='Escolha uma porta de rede: ')
+    label_porta = ttk.Label(box2,text=f'{diplomacia} uma porta de rede: ')
     label_porta.pack(pady=(10,5))
 
     input_porta = ttk.Entry(box2)
     input_porta.pack()
     
-    label_senha = ttk.Label(box3,text='Escolha a senha da rede:')
+    label_senha = ttk.Label(box3,text=f'{diplomacia} a senha da rede:')
     label_senha.pack(pady=(10,5))
 
     input_senha = ttk.Entry(box3)
     input_senha.pack()
 
-    confirm_button = ttk.Button(box,text='Confirmar', command=lambda: Chat_App(input_porta.get(),input_senha.get(),2,window))
+    if qtd_pessoas == 'cliente escolhe':
+        label_qtd = ttk.Label(box3,text='Quantidade maxima de pessoas: ')
+        label_qtd.pack(pady=(10,5))
+
+        input_qtd_pessoa = ttk.Entry(box3)
+        input_qtd_pessoa.pack()
+        confirm_button = ttk.Button(box,text='Confirmar', command=lambda: Chat_App(input_porta.get(),input_senha.get(),int(input_qtd_pessoa.get()),window,'criar grupo'))
+        input_qtd_pessoa.bind("<Return>", lambda event: confirm_button.invoke())
+    elif qtd_pessoas == 'host ja escolheu':
+        confirm_button = ttk.Button(box,text='Confirmar', command=lambda: Chat_App(input_porta.get(),input_senha.get(),False,window,'entrar grupo'))
+    else: 
+        confirm_button = ttk.Button(box,text='Confirmar', command=lambda: Chat_App(input_porta.get(),input_senha.get(),2,window,'entrar direct'))
+
+    input_porta.focus_set()  # Define o foco para o Entry do nome do usuário
+    input_senha.bind("<Return>", lambda event: confirm_button.invoke())
     confirm_button.pack(pady=(15))
 
   
 def Inicio(): #Programar se o usuario clicar em criar grupo
-    window = Gerenciar_Janela('Delete e crie',{'dimensoes':'300x127', 'alinhamento_tela' : 'centralizado'},'Escolha de chat')
+    window = Gerenciar_Janela('Delete e crie',{'dimensoes':'300x150', 'alinhamento_tela' : 'centralizado'},'Escolha de chat')
     box = tk.Frame(window)
     box.pack()
 
-    direct_chat_button = ttk.Button(box, text='Conexão direta',command= lambda:direct_chat(box))
-    multiple_chat_button = ttk.Button(box, text='Criar Grupo')
+    direct_chat_button = ttk.Button(box, text='Conexão Direta', width = 15, command= lambda:config_chat(box,2,'300x200','Insira'))
+    create_chat_button = ttk.Button(box, text='Criar um Grupo', width = 15, command= lambda:config_chat(box,'cliente escolhe','300x250','Escolha'))
+    conect_chat_button = ttk.Button(box, text='Unir-se a Grupo', width = 15, command= lambda: config_chat(box,'host ja escolheu','300x200','Insira'))
 
-    direct_chat_button.pack(pady=(20,10))
-    multiple_chat_button.pack()
-
+    direct_chat_button.pack(pady=(20,0))
+    create_chat_button.pack(pady=10)
+    conect_chat_button.pack(padx=20)
 
 def Conectar_ao_servidor(name_entry,window_antiga):
     def Teste_conexão(): #Adicionar tela de loading
@@ -308,6 +369,9 @@ def Conectar_ao_servidor(name_entry,window_antiga):
         button_servidor = ttk.Button(box, text='Confirmar',command= lambda:Teste_conexão())
         button_servidor.pack(pady=10)
 
+        input_ip_servidor.focus_set()  # Define o foco para o Entry do nome do usuário
+        input_ip_servidor.bind("<Return>", lambda event: button_servidor.invoke())
+
 
 def Entrada():
     window = Gerenciar_Janela('Crie',
@@ -329,6 +393,9 @@ def Entrada():
     label.pack(side='left', padx=5)
     name_entry.pack(side='left')
     enter_button.pack()
+
+    name_entry.focus_set()  # Define o foco para o Entry do nome do usuário
+    name_entry.bind("<Return>", lambda event: enter_button.invoke())
 
     window.mainloop()
     window.protocol("WM_DELETE_WINDOW", lambda: window.quit())  # Fechar janela principal sem erro

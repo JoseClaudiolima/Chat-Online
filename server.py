@@ -7,7 +7,7 @@ client_socket_chat, client_chat = [], []
 
 #porta entre 1024 a 49151
 #futuramente usar essa senha para permitir acesso
-def Create_chat(nmr_porta,senha,qtd_pessoas,socket_primario_client):
+def Create_chat(nmr_porta,senha,qtd_pessoas,pedido,socket_primario_client):
     def comunicacao(socket_do_client_chat):
         while True: #Esse looping é para: Receber as mensagens pelos clientes e enviar a todos do grupo
             try:
@@ -29,16 +29,27 @@ def Create_chat(nmr_porta,senha,qtd_pessoas,socket_primario_client):
                 continue
         return
     
+
+    if (nmr_porta not in portas) and pedido == 'entrar grupo': #Tratamento de erro
+        socket_primario_client.send('Recusado, Grupo nao criado'.encode())
+        return
+    if (nmr_porta in portas) and pedido == 'criar grupo':
+        socket_primario_client.send('Recusado, Grupo já criado'.encode())
+        return
+    
+    print(f'antes: {portas} e {nmr_porta not in portas}, nmr porta: {nmr_porta}')
     if nmr_porta not in portas:  #Para impedir que crie/abra portas de numeros iguais
         global server_pareamento_direto
         server_pareamento_direto = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_pareamento_direto.bind((str(ipv4_address), int(nmr_porta)))
         server_pareamento_direto.listen(int(qtd_pessoas))    
-        portas[nmr_porta] = senha
+        #portas[nmr_porta] = senha
+        portas[nmr_porta] = [senha, qtd_pessoas]
         print(f'Servidor aguardando conexões, em: {nmr_porta}')
+    print(f'depois: {portas}')
 
-    if len(client_socket_chat) <int(qtd_pessoas): #Para: 'Trancar' o grupo chat, entre a quantidade de pessoas especificada
-        if senha == portas.get(nmr_porta): #portas[nmr_porta] = senha
+    if (nmr_porta in portas) and len(client_socket_chat) <int(portas[nmr_porta][1]) : #Para: 'Trancar' o grupo chat, entre a quantidade de pessoas especificada
+        if portas[nmr_porta][0] == senha: #portas[nmr_porta] = senha
             socket_primario_client.send('Autorizado'.encode())
             client_socket_create_chat, addr = server_pareamento_direto.accept()
             print(f'Conexão recebida de ip:{addr[0]} porta do cliente:{addr[1]} no chat de porta: {nmr_porta}')
@@ -48,8 +59,10 @@ def Create_chat(nmr_porta,senha,qtd_pessoas,socket_primario_client):
             client_thread_chat = threading.Thread(target=comunicacao, args=(client_socket_create_chat,))
             client_thread_chat.start()
         else:
+            socket_primario_client.send('Recusado, senha está errada!'.encode())
             print('Senha do usuario está errada!')
     else:
+        socket_primario_client.send('Recusado, Grupo esta cheio'.encode())
         print('Servidor cheio')
 
 def escuta_solicitacao_primaria(client_socket,id_cliente):
@@ -62,7 +75,7 @@ def escuta_solicitacao_primaria(client_socket,id_cliente):
             if not mensagem:
                 break
             msg = mensagem.split('+') 
-            Create_chat(msg[0],msg[1],msg[2],client_socket) # nmr_porta,senha,qtd_pessoas
+            Create_chat(msg[0],msg[1],msg[2],msg[3],client_socket) # nmr_porta,senha,qtd_pessoas
         except ConnectionError:
             break
 
