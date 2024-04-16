@@ -141,9 +141,11 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
             return
         mensagem = f"{message_input.get()} {format(math.pi, '.10f')} {name}"
         if mensagem:
+            mensagem = emoji.demojize(mensagem) 
             cifra = rsa.cifrar(mensagem,28837,40301) #Está com chave já selecionada, podemos aleatorizar depois
             cliente_socket.send(cifra.encode())
             message_input.delete(0, tk.END)
+        widget_emoji(chat_display,'Desapareça')
 
     def Receber_mensagens():
         rodar = True
@@ -188,14 +190,43 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
         chat_display.configure(state='normal')
         chat_display.delete(1.0, tk.END)
         chat_display.configure(state='disabled')
+        widget_emoji(chat_display,'Desapareça')
         
     def Scroll_to_bottom():
         """Rola o chat para baixo."""
         chat_display.yview_moveto(1.0)
 
     def widget_emoji(window,solicitacao, event=None):
-        
-        print('cliquei')
+        def emoji_click(emoji):
+            message_input.insert(tk.END, emoji)
+
+        if aberto[0] == 'Não aberto' and solicitacao == 'Abrir':
+            aberto[0] = 'Aberto' 
+            global emoji_frame           
+            emoji_frame = tk.Frame(window)
+            emoji_frame.pack(side='left')
+            emoji_minor_frame = tk.Frame(emoji_frame)
+            emoji_minor_frame.pack(side='left')
+            Emoji_list = emoji.emojize(Emoticons.Meus_emoji('Smile')) 
+
+            c = 0
+            for emoji_icon in Emoji_list:
+                if emoji.is_emoji(emoji_icon):
+                    emoji_label_icon = tk.Label(emoji_minor_frame, text=emoji_icon, font=('Arial',16))
+                    emoji_label_icon.bind("<Button-1>",lambda event, e =emoji_icon: emoji_click(e))
+                    emoji_label_icon.pack()
+                    c +=1
+                    if c == 6:
+                        c = 0
+                        emoji_minor_frame = tk.Frame(emoji_frame)
+                        emoji_minor_frame.pack(side='left') 
+        elif (aberto[0] == 'Aberto' and solicitacao == 'Desapareça')\
+             or (aberto[0] == 'Aberto' and solicitacao == 'Abrir'):
+            aberto[0] = 'Invisivel'
+            emoji_frame.pack_forget()
+        elif aberto[0] == 'Invisivel' and solicitacao == 'Abrir':
+            aberto[0] = 'Aberto'
+            emoji_frame.pack(side='left')
 
     nmr_porta, validação_a = Tratar_input(nmr_porta,'porta',window_antiga,True,False,False,5,4)
     if validação_a == True:
@@ -280,6 +311,7 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
 
                 emoji_label = ttk.Label(input, text=emoji_text,font=('Arial',32))
                 emoji_label.pack(side='left')
+                aberto = ['Não aberto']
                 emoji_label.bind("<Button-1>", lambda event: widget_emoji(chat_window,'Abrir', event))
 
                 
