@@ -19,7 +19,7 @@ import emoji
 #comando = 'Crie', Delete e crie, Crie-Toplevel
 run = []
 
-def Tratar_janela_erro(window_antiga,dimensoes,qtd_label,text_l,font_l,pady_l):
+def Tratar_janela_erro(window_antiga,dimensoes,qtd_label,text_l,font_l,pady_l):#text_l,font_l,pady_l são arrays contendo seus dados em cada casa respectiva
     window_antiga.withdraw()
     window_erro = Gerenciar_Janela('Crie',{'dimensoes' : dimensoes, 'alinhamento_tela': 'centralizado'},"Aviso")
     for i in range(qtd_label):
@@ -170,16 +170,12 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
                             primeira_iteracao = True
                             for i in msg_texto:
                                 if primeira_iteracao == True:
-                                    if emoji.is_emoji(i):
-                                        chat_display.insert(tk.END, f'{nome}: {i}', 'left emoticon_tag')
-                                    else:
-                                        chat_display.insert(tk.END, f'{nome}: {i}', 'left')
+                                    chat_display.insert(tk.END, f'{nome}: ', 'left')
                                     primeira_iteracao = False
+                                if emoji.is_emoji(i):
+                                    chat_display.insert(tk.END, i, 'left emoticon_tag')
                                 else:
-                                    if emoji.is_emoji(i):
-                                        chat_display.insert(tk.END, i, 'left emoticon_tag')
-                                    else:
-                                        chat_display.insert(tk.END, i, 'left')
+                                    chat_display.insert(tk.END, i, 'left')
                             chat_display.insert(tk.END, '\n', 'left')
                         Scroll_to_bottom()
                         chat_display.configure(state='disabled')
@@ -197,14 +193,8 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
         """Rola o chat para baixo."""
         chat_display.yview_moveto(1.0)
 
-    def abrir_widget_emoji(event=None):
-        # Criar uma nova janela
-        #nova_janela = tk.Toplevel(root)
-        #nova_janela.title("Novo Widget")
+    def widget_emoji(window,solicitacao, event=None):
         
-        # Adicionar conteúdo à nova janela
-        #label = ttk.Label(nova_janela, text="Este é um novo widget!")
-        #label.pack(padx=20, pady=20)
         print('cliquei')
 
     nmr_porta, validação_a = Tratar_input(nmr_porta,'porta',window_antiga,True,False,False,5,4)
@@ -275,7 +265,7 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
                 # Configuração de tags para alinhamento
                 chat_display.tag_configure('right', justify='right')
                 chat_display.tag_configure('left', justify='left')
-                chat_display.tag_configure('emoticon_tag', font=('Arial',16))
+                chat_display.tag_configure('emoticon_tag', font=('Arial',20))
 
                 scrollbar = ttk.Scrollbar(chat_box, command=chat_display.yview)
                 scrollbar.pack(side='right', padx=10, fill='y')  # fill='y' para preencher a altura disponível
@@ -290,7 +280,7 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
 
                 emoji_label = ttk.Label(input, text=emoji_text,font=('Arial',32))
                 emoji_label.pack(side='left')
-                emoji_label.bind("<Button-1>", abrir_widget_emoji)
+                emoji_label.bind("<Button-1>", lambda event: widget_emoji(chat_window,'Abrir', event))
 
                 
 
