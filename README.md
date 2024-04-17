@@ -9,6 +9,7 @@ Este é um projeto de chat online desenvolvido em Python, utilizando sockets par
 1. Certifique-se de ter Python instalado no seu sistema.
 2. Biblioteca externa do python, **ttkbootstrap**: Instale usando o comando pip install ttkbootstrap.
 3. Biblioteca externa do python, **pyperclip**: Instale usando o comando pip install pyperclip.
+4. Biblioteca externa do python, **emoji**: Instale usando o comando pip install emoji.
 
 ### Como usar
 Inicie o servidor executando python server.py.
