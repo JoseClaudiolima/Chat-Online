@@ -7,19 +7,17 @@ import socket
 import threading
 import math
 import time
-import os
 import emoji
 
 #Passo 1: Coloque o nome
-#Passo 2: Coloque o ipv4 do server, aparece no terminal do server.py
-#Passo 3: Selecione a opção de cima, a de baixo ainda não foi programada
-#Passo 4: Coloque uma porta desejada, acho que entre #1025 a 49152 não da erro, mas talvez devemos pesquisar isso
-#Passo 5: Colocaria a senha, porém ainda não tem funcionalidade para ela
+#Passo 2: Coloque o ipv4 do server, ja copia automaticamente no server.py
+#Passo 3: Selecione a opção de criar chat que deseja
+#Passo 4: Coloque uma porta desejada, acho que entre #1025 a 49152 não da erro, ainda falta previnir erro disto
+#Passo 5: Escolha uma senha
 
-#comando = 'Crie', Delete e crie, Crie-Toplevel
 run = []
 
-def Tratar_janela_erro(window_antiga,dimensoes,qtd_label,text_l,font_l,pady_l):#text_l,font_l,pady_l são arrays contendo seus dados em cada casa respectiva
+def Tratar_janela_erro(window_antiga,dimensoes,qtd_label,text_l,font_l,pady_l):#Nesta função é automatizado o processo de criar uma janela de erro, até mesmo sobre colocar o texto no label
     window_antiga.withdraw()
     window_erro = Gerenciar_Janela('Crie',{'dimensoes' : dimensoes, 'alinhamento_tela': 'centralizado'},"Aviso")
     for i in range(qtd_label):
@@ -35,7 +33,7 @@ def Gerenciar_Janela(comando,config_janela,titulo,window_reserva=None):
             widget.destroy()
         return
 
-    def Janela_title_geometry(janela_personalizada,config_janela):
+    def Janela_title_geometry(janela_personalizada,config_janela): #Aqui será configurado o titulo e tamanho da janela
         x,y = 0,0
         if config_janela['alinhamento_tela'] == 'centralizado':
             # Calculando a posição central da tela
@@ -50,7 +48,7 @@ def Gerenciar_Janela(comando,config_janela,titulo,window_reserva=None):
         return janela_personalizada
     
 
-    if comando == 'Crie' and len(run) == 0:
+    if comando == 'Crie' and len(run) == 0: #Se for a primeira vez que pede para criar uma janela
         global window
         window = ttk.Window()
         run.append(window)
@@ -67,14 +65,13 @@ def Gerenciar_Janela(comando,config_janela,titulo,window_reserva=None):
         return window        
 
     if comando == 'Crie-Toplevel':
-        #global window_Toplevel  #Acho que da para tirar isso
-        window_Toplevel = ttk.Toplevel()    # Usar Toplevel em vez de Window, evita msg de erro (Cria uma janela mais independente, pelo que entendi) 
-        window.withdraw()                   # usa witdraw em vez de destroy, evita msg de erro (isso faz a tela não aparecer para o usuario em vez de destroila)
+        window_Toplevel = ttk.Toplevel()    # Usa Toplevel em vez de Window, pois cria uma janela mais independente, e mais previnida de erros 
+        window.withdraw()                   # Usa witdraw em vez de destroy, pois previne erros (isso faz a tela não aparecer para o usuario em vez de destroila)
        
         window_Toplevel = Janela_title_geometry(window_Toplevel,config_janela)  
         return window_Toplevel
  
-
+ #A função tem como objetivo que seja passado uma string e ela retorne se os parametros de analise da string estão aceitos, por exemplo, o usuário não pode colocar um caractere alfabetico no input de ipv4 do server ou de porta do servidor
 def Tratar_input(string,id,window_antiga,pode_numero,pode_char_esp,pode_char_alfa,limite_max_char,limite_min_char):
     validação = True
     validação_numero = validação_char_esp = validação_char_alfa = validação_max_limite = validação_min_limite = validação_vazia  = ''
@@ -83,27 +80,22 @@ def Tratar_input(string,id,window_antiga,pode_numero,pode_char_esp,pode_char_alf
     if string == '':
         validação = False
         validação_vazia = 'Erro'
-    if (pode_numero == False) and (any(char.isdigit() for char in string)):
+    if (pode_numero == False) and (any(char.isdigit() for char in string)): #Na sequencia de ifs abaixo, é comparado se a string está conforme necessário
         validação = False
         validação_numero = 'Erro'
-
     if (pode_char_esp == False) and (any(not char.isalnum() and not char.isspace() and not char == '.' for char in string)):
         validação = False
         validação_char_esp = 'Erro'
-        
     if (pode_char_alfa == False) and (any(char.isalpha() for char in string)):    
         validação = False
         validação_char_alfa = 'Erro'
-        
     if (limite_max_char != False) and (limite_max_char < len(string)):
         validação = False
         validação_max_limite = 'Erro'
-
     if (limite_min_char != False) and (limite_min_char > len(string)):
         validação = False
         validação_min_limite = 'Erro'
-
-    if validação == False:
+    if validação == False: #Abaixo será criado uma janela personalizada baseada no erro especifico do usuário ao colocar o input não compativel
         window_antiga.withdraw() 
         window_erro = Gerenciar_Janela('Crie',{'dimensoes' : '300x127', 'alinhamento_tela': 'centralizado'},"Aviso")
         ttk.Label(window_erro,text='Aviso!!',font=('Arial',13, 'bold'),background='white').pack(pady=(5))
@@ -136,14 +128,14 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
         cliente_socket.close() #Cliente se desconecta de fato
 
     def Enviar_mensagem(msg=None):
-        if msg == "Protocolo_close":
+        if msg == "Protocolo_close": #Isso é para avisar o servidor que o cliente fechou a janela e se desconectará
             cliente_socket.send(msg.encode())
             return
-        mensagem = f"{message_input.get()} {format(math.pi, '.10f')} {name}"
-        if mensagem:
+        mensagem = f"{message_input.get()} {format(math.pi, '.10f')} {name}" #Isso é para separar as diferentes informações passadas em uma só mensagem, os 10 numeros do pi foi escolhido como meio de separação de mensagens, uma vez que dificilmente alguem escreveria isso no chat
+        if mensagem: #Abaixo fará a cifragem da mensagem, e depois o envio ao servidor
             mensagem = emoji.demojize(mensagem) 
             cifra = rsa.cifrar(mensagem,28837,40301) #Está com chave já selecionada, podemos aleatorizar depois
-            cliente_socket.send(cifra.encode())
+            cliente_socket.send(cifra.encode()) #a mensagem é enviada nessa linha ao servidor, usando sockets
             message_input.delete(0, tk.END)
         widget_emoji(chat_display,'Desapareça')
 
@@ -151,18 +143,17 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
         rodar = True
         while rodar:
             try:
-                mensagem = cliente_socket.recv(1024).decode()
+                mensagem = cliente_socket.recv(1024).decode() #Decodificará a mensagem por padrão do servidor
                 msg_decifrada = rsa.decifrar(mensagem,40301,12973) #Está com chave já selecionada, podemos aleatorizar depois
                 msg_decifrada = msg_decifrada.split(f" {format(math.pi, '.10f')} ")
-                if msg_decifrada[0]: #No comando abaixo, pode-se estudar melhor sobre thread em python, para resolver de outro jeito
+                if msg_decifrada[0]: 
                     if chat_window.winfo_exists(): #Checa se ainda existe o chat_window, pode ter sido fechado pela primeira tread 
-                        
                         nome = msg_decifrada[1]
                         chat_display.configure(state='normal')
                         msg_texto = emoji.emojize(msg_decifrada[0])
 
-                        if nome == name: 
-                            for i in msg_texto:
+                        if nome == name: #Se o nome da pessoa for o do próprio cliente, faz configuração diferencial na amostra da mensagem no chat
+                            for i in msg_texto:#O looping é feito para analisar se há emoji na mensagem colocada, pois caso afirmativo é colocado um estilo de font diferenciado ao emoji
                                 if emoji.is_emoji(i):
                                     chat_display.insert(tk.END, i, 'right emoticon_tag')
                                 else:
@@ -170,7 +161,7 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
                             chat_display.insert(tk.END, '\n', 'right')
                         else:
                             primeira_iteracao = True
-                            for i in msg_texto:
+                            for i in msg_texto: #O looping é feito para analisar se há emoji na mensagem colocada, pois caso afirmativo é colocado um estilo de font diferenciado ao emoji
                                 if primeira_iteracao == True:
                                     chat_display.insert(tk.END, f'{nome}: ', 'left')
                                     primeira_iteracao = False
@@ -190,37 +181,34 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
         chat_display.configure(state='normal')
         chat_display.delete(1.0, tk.END)
         chat_display.configure(state='disabled')
-        widget_emoji(chat_display,'Desapareça')
         
     def Scroll_to_bottom():
         """Rola o chat para baixo."""
         chat_display.yview_moveto(1.0)
 
     def widget_emoji(window,solicitacao, event=None):
-        def emoji_click(emoji):
+        def emoji_click(emoji): #Coloca o emoji clicado no input do usuario
             message_input.insert(tk.END, emoji)
 
-        def classe_click(classe,event=None): #nmr classe
-            for i in range(len(classe_emoji_list)):
-                if classe == i:
-                    emoji_classe_list[i].configure(border = 1, relief = 'solid')
+        def classe_click(classe,event=None): #Mostra os emojis da classe, ao clicar no emoji de exemplo
+            for i in range(len(classe_emoji_menores_list)):
+                if classe == i: #Coloca a borda no emoji de exemplo, e tira do que não foram clicados
+                    emoji_de_exemplo_list[i].configure(border = 1, relief = 'solid')
                 else:
-                    emoji_classe_list[i].configure(border = 0,relief = 'flat')
+                    emoji_de_exemplo_list[i].configure(border = 0,relief = 'flat')
 
-                for j in range(len(classe_emoji_list[i])):
+                for j in range(len(classe_emoji_menores_list[i])): # Looping em cada emoji menor para que mostre cada um na tela
                     if classe == i:
-                        classe_emoji_list[i][j].pack(side='left')
+                        classe_emoji_menores_list[i][j].pack(side='left')
                     else:
-                        classe_emoji_list[i][j].pack_forget()
+                        classe_emoji_menores_list[i][j].pack_forget()
 
-        
         def carregar_emoji():
-
             def cada_emoji_unico(classe,frame,nmr_classe):
-                Emoji_list = emoji.emojize(Emoticons.Meus_emoji(classe))
+                Emoji_list = emoji.emojize(Emoticons.Meus_emoji(classe)) #Pega todos os emojis menores do nosso modulo de emoticon
                 c = 0
                 copia_frame = frame
-                for emoji_icon in Emoji_list:
+                for emoji_icon in Emoji_list: #Neste looping é carregado todos os emojis do nosso modulo de emoticon, e mostra a da primeira classe, e oculta as demais
                     if emoji.is_emoji(emoji_icon):
                         emoji_label_icon = tk.Label(copia_frame, text=emoji_icon, font=('Arial',16))
                         emoji_label_icon.bind("<Button-1>",lambda event, e =emoji_icon: emoji_click(e))
@@ -232,11 +220,11 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
                             emoji_minor_frame.pack(side='left')
 
                             copia_frame = emoji_minor_frame
-                            classe_emoji_list[nmr_classe].append(emoji_minor_frame)
+                            classe_emoji_menores_list[nmr_classe].append(emoji_minor_frame)
                             if not nmr_classe == 0:
                                 emoji_minor_frame.pack_forget()
 
-            global emoji_minor_frame_smile, emoji_minor_frame_mao
+            global emoji_minor_frame_smile, emoji_minor_frame_mao #Abaixo é programado os Labels do emoji classe (o de exemplo)
             emoji_minor_frame_smile = tk.Frame(emoji_frame)
             emoji_minor_frame_smile.pack(side='left')
             emoji_minor_frame_mao = tk.Frame(emoji_frame)
@@ -244,21 +232,23 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
             emoji_minor_frame_animais = tk.Frame(emoji_frame)
             emoji_minor_frame_alimentos = tk.Frame(emoji_frame)
 
-            classe_emoji_list.append([emoji_minor_frame_smile])
+            #Abaixo faz chamada para carregar os emojis menores, e também é colocado na lista que contém todos os emojis menores utilizados no código em uma unica array
+            classe_emoji_menores_list.append([emoji_minor_frame_smile])
             cada_emoji_unico('Smile' , emoji_minor_frame_smile , 0)
-            classe_emoji_list.append([emoji_minor_frame_mao])
+            classe_emoji_menores_list.append([emoji_minor_frame_mao])
             cada_emoji_unico('Mão e corpo' , emoji_minor_frame_mao, 1)
-            classe_emoji_list.append([emoji_minor_frame_pessoas])
+            classe_emoji_menores_list.append([emoji_minor_frame_pessoas])
             cada_emoji_unico('Pessoas no geral' , emoji_minor_frame_pessoas, 2)
-            classe_emoji_list.append([emoji_minor_frame_animais])
+            classe_emoji_menores_list.append([emoji_minor_frame_animais])
             cada_emoji_unico('Animais e natureza' , emoji_minor_frame_animais, 3)
-            classe_emoji_list.append([emoji_minor_frame_alimentos])
+            classe_emoji_menores_list.append([emoji_minor_frame_alimentos])
             cada_emoji_unico('Alimentos' , emoji_minor_frame_alimentos, 4)
             
-
-
-        if aberto[0] == 'Não aberto' and solicitacao == 'Abrir':
-            aberto[0] = 'Invisivel' 
+        #Será executado o if abaixo, apenas uma vez, quando o chat_app for executado.
+        #Basicamente no if abaixo, ele criará tanto os emojis de exemplo, quanto os menores, e pedirá para carregar ambos na função acima.
+        #Os outros elif, são para mostrar e ocultar os emojis da tela conforme as ações do usuario (que dispararam a chamada dessa função)
+        if Abrir_emojis[0] == 'Não aberto' and solicitacao == 'Abrir':
+            Abrir_emojis[0] = 'Invisivel' 
             global emoji_frame           
             emoji_frame = tk.Frame(window)
             emoji_frame.pack(side='left')
@@ -266,50 +256,47 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
             emoji_classe_frame = tk.Frame(emoji_frame)
             emoji_classe_frame.pack(side='left',padx=(5,0))
             
-            classe_emoji_list = []
-            emoji_classe_list = []
+            classe_emoji_menores_list = []
+            emoji_de_exemplo_list = []
             emoji_classe_label_rosto = tk.Label(emoji_classe_frame,text=emoji.emojize(':thinking_face:'),font=('Arial',20),border=1,relief="solid")
             emoji_classe_label_rosto.pack()
             emoji_classe_label_rosto.bind("<Button-1>",lambda event, e = 0: classe_click(e))
-            emoji_classe_list.append(emoji_classe_label_rosto)
+            emoji_de_exemplo_list.append(emoji_classe_label_rosto)
 
             emoji_classe_label_mao = tk.Label(emoji_classe_frame,text=emoji.emojize(':thumbs_up:'),font=('Arial',20))
             emoji_classe_label_mao.pack()
             emoji_classe_label_mao.bind("<Button-1>",lambda event, e = 1: classe_click(e)) 
-            emoji_classe_list.append(emoji_classe_label_mao)
+            emoji_de_exemplo_list.append(emoji_classe_label_mao)
 
             emoji_classe_label_corpo = tk.Label(emoji_classe_frame,text=emoji.emojize(':person_gesturing_NO:'),font=('Arial',20))
             emoji_classe_label_corpo.pack()
             emoji_classe_label_corpo.bind("<Button-1>",lambda event, e = 2: classe_click(e))
-            emoji_classe_list.append(emoji_classe_label_corpo)
+            emoji_de_exemplo_list.append(emoji_classe_label_corpo)
 
             emoji_classe_label_animal = tk.Label(emoji_classe_frame,text=emoji.emojize(':dog_face:'),font=('Arial',20))
             emoji_classe_label_animal.pack()
             emoji_classe_label_animal.bind("<Button-1>",lambda event, e = 3: classe_click(e))
-            emoji_classe_list.append(emoji_classe_label_animal)
+            emoji_de_exemplo_list.append(emoji_classe_label_animal)
 
             emoji_classe_label_comida = tk.Label(emoji_classe_frame,text=emoji.emojize(':beer_mug:'),font=('Arial',20))
             emoji_classe_label_comida.pack()
             emoji_classe_label_comida.bind("<Button-1>",lambda event, e = 4: classe_click(e))
-            emoji_classe_list.append(emoji_classe_label_comida)
+            emoji_de_exemplo_list.append(emoji_classe_label_comida)
 
-            
-            
             carregar_emoji()
-
             emoji_frame.pack_forget()
-        elif (aberto[0] == 'Aberto' and solicitacao == 'Desapareça') or (aberto[0] == 'Aberto' and solicitacao == 'Abrir'):
-            aberto[0] = 'Invisivel'
+        elif (Abrir_emojis[0] == 'Aberto' and solicitacao == 'Desapareça') or (Abrir_emojis[0] == 'Aberto' and solicitacao == 'Abrir'):
+            Abrir_emojis[0] = 'Invisivel'
             emoji_frame.pack_forget()
-        elif aberto[0] == 'Invisivel' and solicitacao == 'Abrir':
-            aberto[0] = 'Aberto'
+        elif Abrir_emojis[0] == 'Invisivel' and solicitacao == 'Abrir':
+            Abrir_emojis[0] = 'Aberto'
             emoji_frame.pack(side='left')
 
     nmr_porta, validação_a = Tratar_input(nmr_porta,'porta',window_antiga,True,False,False,5,4)
     if validação_a == True:
         senha, validação_b = Tratar_input(senha,'senha',window_antiga,True,True,True,8,3)
         if validação_b == True:
-            #Abaixo a gente manda para o server, a mensagem contendo os 3 parametros abaixo, para o chat criar um novo chat lá com base nessas info
+            #Abaixo mandamos para o server, a mensagem contendo os 4 parametros abaixo, para o chat criar um novo chat lá com base nessas informações
             message = f'{nmr_porta}+{senha}+{qtd_pessoas}+{pedido}'
             connection.send(message.encode())
 
@@ -360,7 +347,7 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
             cliente_socket.connect((ip_server, int(nmr_porta)))
               
             
-            if conexao_validacao == True:
+            if conexao_validacao == True: #Caso a conexão de entrar/criar chat for aceita, será configurado todo os detalhes do chat
                 chat_window = Gerenciar_Janela('Crie-Toplevel',
                                             {'dimensoes': '800x525','alinhamento_tela': 'nenhum' },
                                             f'Chat Online - {name} e #cliente que conecta junto')#colocar nome de quem conectou junto
@@ -382,13 +369,10 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
                 message_input.pack(side='left',padx=10)
 
 
-
-                # Criar o botão com a imagem
-                emoji_text = emoji.emojize(':slightly_smiling_face:')
-
+                emoji_text = emoji.emojize(':slightly_smiling_face:') #O texto de emoji ao lado do input do usuario se torna um botão que mostra os emojis disponiveis para serem rapidamente usados
                 emoji_label = ttk.Label(input, text=emoji_text,font=('Arial',32))
                 emoji_label.pack(side='left')
-                aberto = ['Não aberto']
+                Abrir_emojis = ['Não aberto']
                 emoji_label.bind("<Button-1>", lambda event: widget_emoji(chat_window,'Abrir', event))
                 
 
@@ -404,14 +388,14 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
 
                 widget_emoji(chat_window,'Abrir')
 
-                Thread_receber = threading.Thread(target=Receber_mensagens)
+                Thread_receber = threading.Thread(target=Receber_mensagens) #É iniciado uma thread para rodar separadamente no aguardo de mensagens enviadas pelo servidor
                 Thread_receber.start()
                 chat_window.protocol("WM_DELETE_WINDOW", lambda: Fechar_janela_chat())
             else:
                 cliente_socket.close()
 
 
-def config_chat(box,qtd_pessoas,dimensoes,diplomacia):
+def config_chat(box,qtd_pessoas,dimensoes,diplomacia): #Nesta janela o usuario definirá a configuração do chat escolhido
     window = Gerenciar_Janela('Delete e crie',
                      {'dimensoes' : dimensoes, 'alinhamento_tela': 'centralizado'}, #Alterar largura
                      'Configuração - Chat')
@@ -449,11 +433,11 @@ def config_chat(box,qtd_pessoas,dimensoes,diplomacia):
         confirm_button = ttk.Button(box,text='Confirmar', command=lambda: Chat_App(input_porta.get(),input_senha.get(),2,window,'entrar direct'))
 
     input_porta.focus_set()  # Define o foco para o Entry do nome do usuário
-    input_senha.bind("<Return>", lambda event: confirm_button.invoke())
+    input_senha.bind("<Return>", lambda event: confirm_button.invoke())#Ao pressionar enter, ele chamada a função do botão
     confirm_button.pack(pady=(15))
 
   
-def Inicio(): #Programar se o usuario clicar em criar grupo
+def Inicio(): #Nesta janela o usuário escolherá se prefere criar um grupo, entrar em um ou então algo direto com outra pessoa
     window = Gerenciar_Janela('Delete e crie',{'dimensoes':'300x150', 'alinhamento_tela' : 'centralizado'},'Escolha de chat')
     box = tk.Frame(window)
     box.pack()
@@ -467,27 +451,25 @@ def Inicio(): #Programar se o usuario clicar em criar grupo
     conect_chat_button.pack(padx=20)
 
 def Conectar_ao_servidor(name_entry,window_antiga):
-    def Teste_conexão(): #Adicionar tela de loading
+    def Teste_conexão(): #Abaixo, será feito uma tentativa de comunicação com o servidor
         global ip_server
         ip_server, validação = Tratar_input(input_ip_servidor.get(),'ipv4',window,True,False,False,15,7)
         if validação == True:
             try:
                 global connection
                 connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                #Adicionar tela de loading aqui antes de tentar conexão, atualmente o app trava se colocar invalido
                 connection.connect((ip_server, 3000))
 
                 Inicio()
             except (ConnectionRefusedError, TimeoutError, OSError) as e: #Tela de erro ao conectar ao ip do server
-                #Tratar_janela_erro(window_antiga,dimensoes,qtd_label,text_l,font_l,pady_l):
                 Tratar_janela_erro(window,'400x127',3,['Aviso!!','- Não foi possivel estabelecer a conexão com o servidor!','- Verifique se o ipv4 do servidor foi digitado corretamente!'],
                                    [('Arial',13, 'bold'),('Arial',11),('Arial',11)],
                                    [(5),(0),(0)])
             return
     
-    global name #Levar essa verificação para outro lugar
+    global name 
     name, validação = Tratar_input(name_entry,'nome',window_antiga,False,False,True,16,False)
-    if validação == True:
+    if validação == True: #Após validar o nome, pedirá o ipv4 do server
         window = Gerenciar_Janela('Delete e crie',{'dimensoes':'300x127', 'alinhamento_tela' : 'centralizado'},'Conecte ao Servidor')
 
         box = tk.Frame(window)
@@ -506,7 +488,7 @@ def Conectar_ao_servidor(name_entry,window_antiga):
         input_ip_servidor.bind("<Return>", lambda event: button_servidor.invoke())
 
 
-def Entrada():
+def Entrada(): #Criará a janela inicial, pedindo o nome do usuario como entrada, além de carregar os widgets necessários
     window = Gerenciar_Janela('Crie',
                               {'dimensoes':'300x127', 'alinhamento_tela' : 'centralizado'},
                               "Nome do Usuário")
@@ -528,11 +510,10 @@ def Entrada():
     enter_button.pack()
 
     name_entry.focus_set()  # Define o foco para o Entry do nome do usuário
-    name_entry.bind("<Return>", lambda event: enter_button.invoke())
+    name_entry.bind("<Return>", lambda event: enter_button.invoke()) #Ao pressionar enter, ele chamada a função do botão
 
     window.mainloop()
     window.protocol("WM_DELETE_WINDOW", lambda: window.quit())  # Fechar janela principal sem erro
           
 
 Entrada()
-
