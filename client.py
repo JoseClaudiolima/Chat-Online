@@ -200,28 +200,105 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
         def emoji_click(emoji):
             message_input.insert(tk.END, emoji)
 
+        def classe_click(classe,event=None): #nmr classe
+            for i in range(len(classe_emoji_list)):
+                if classe == i:
+                    emoji_classe_list[i].configure(border = 1, relief = 'solid')
+                else:
+                    emoji_classe_list[i].configure(border = 0,relief = 'flat')
+
+                for j in range(len(classe_emoji_list[i])):
+                    if classe == i:
+                        classe_emoji_list[i][j].pack(side='left')
+                    else:
+                        classe_emoji_list[i][j].pack_forget()
+
+        
+        def carregar_emoji():
+
+            def cada_emoji_unico(classe,frame,nmr_classe):
+                Emoji_list = emoji.emojize(Emoticons.Meus_emoji(classe))
+                c = 0
+                copia_frame = frame
+                for emoji_icon in Emoji_list:
+                    if emoji.is_emoji(emoji_icon):
+                        emoji_label_icon = tk.Label(copia_frame, text=emoji_icon, font=('Arial',16))
+                        emoji_label_icon.bind("<Button-1>",lambda event, e =emoji_icon: emoji_click(e))
+                        emoji_label_icon.pack()
+                        c +=1
+                        if c == 6:
+                            c = 0
+                            emoji_minor_frame = tk.Frame(emoji_frame)
+                            emoji_minor_frame.pack(side='left')
+
+                            copia_frame = emoji_minor_frame
+                            classe_emoji_list[nmr_classe].append(emoji_minor_frame)
+                            if not nmr_classe == 0:
+                                emoji_minor_frame.pack_forget()
+
+            global emoji_minor_frame_smile, emoji_minor_frame_mao
+            emoji_minor_frame_smile = tk.Frame(emoji_frame)
+            emoji_minor_frame_smile.pack(side='left')
+            emoji_minor_frame_mao = tk.Frame(emoji_frame)
+            emoji_minor_frame_pessoas = tk.Frame(emoji_frame)
+            emoji_minor_frame_animais = tk.Frame(emoji_frame)
+            emoji_minor_frame_alimentos = tk.Frame(emoji_frame)
+
+            classe_emoji_list.append([emoji_minor_frame_smile])
+            cada_emoji_unico('Smile' , emoji_minor_frame_smile , 0)
+            classe_emoji_list.append([emoji_minor_frame_mao])
+            cada_emoji_unico('Mão e corpo' , emoji_minor_frame_mao, 1)
+            classe_emoji_list.append([emoji_minor_frame_pessoas])
+            cada_emoji_unico('Pessoas no geral' , emoji_minor_frame_pessoas, 2)
+            classe_emoji_list.append([emoji_minor_frame_animais])
+            cada_emoji_unico('Animais e natureza' , emoji_minor_frame_animais, 3)
+            classe_emoji_list.append([emoji_minor_frame_alimentos])
+            cada_emoji_unico('Alimentos' , emoji_minor_frame_alimentos, 4)
+            
+
+
         if aberto[0] == 'Não aberto' and solicitacao == 'Abrir':
-            aberto[0] = 'Aberto' 
+            aberto[0] = 'Invisivel' 
             global emoji_frame           
             emoji_frame = tk.Frame(window)
             emoji_frame.pack(side='left')
-            emoji_minor_frame = tk.Frame(emoji_frame)
-            emoji_minor_frame.pack(side='left')
-            Emoji_list = emoji.emojize(Emoticons.Meus_emoji('Smile')) 
 
-            c = 0
-            for emoji_icon in Emoji_list:
-                if emoji.is_emoji(emoji_icon):
-                    emoji_label_icon = tk.Label(emoji_minor_frame, text=emoji_icon, font=('Arial',16))
-                    emoji_label_icon.bind("<Button-1>",lambda event, e =emoji_icon: emoji_click(e))
-                    emoji_label_icon.pack()
-                    c +=1
-                    if c == 6:
-                        c = 0
-                        emoji_minor_frame = tk.Frame(emoji_frame)
-                        emoji_minor_frame.pack(side='left') 
-        elif (aberto[0] == 'Aberto' and solicitacao == 'Desapareça')\
-             or (aberto[0] == 'Aberto' and solicitacao == 'Abrir'):
+            emoji_classe_frame = tk.Frame(emoji_frame)
+            emoji_classe_frame.pack(side='left',padx=(5,0))
+            
+            classe_emoji_list = []
+            emoji_classe_list = []
+            emoji_classe_label_rosto = tk.Label(emoji_classe_frame,text=emoji.emojize(':thinking_face:'),font=('Arial',20),border=1,relief="solid")
+            emoji_classe_label_rosto.pack()
+            emoji_classe_label_rosto.bind("<Button-1>",lambda event, e = 0: classe_click(e))
+            emoji_classe_list.append(emoji_classe_label_rosto)
+
+            emoji_classe_label_mao = tk.Label(emoji_classe_frame,text=emoji.emojize(':thumbs_up:'),font=('Arial',20))
+            emoji_classe_label_mao.pack()
+            emoji_classe_label_mao.bind("<Button-1>",lambda event, e = 1: classe_click(e)) 
+            emoji_classe_list.append(emoji_classe_label_mao)
+
+            emoji_classe_label_corpo = tk.Label(emoji_classe_frame,text=emoji.emojize(':person_gesturing_NO:'),font=('Arial',20))
+            emoji_classe_label_corpo.pack()
+            emoji_classe_label_corpo.bind("<Button-1>",lambda event, e = 2: classe_click(e))
+            emoji_classe_list.append(emoji_classe_label_corpo)
+
+            emoji_classe_label_animal = tk.Label(emoji_classe_frame,text=emoji.emojize(':dog_face:'),font=('Arial',20))
+            emoji_classe_label_animal.pack()
+            emoji_classe_label_animal.bind("<Button-1>",lambda event, e = 3: classe_click(e))
+            emoji_classe_list.append(emoji_classe_label_animal)
+
+            emoji_classe_label_comida = tk.Label(emoji_classe_frame,text=emoji.emojize(':beer_mug:'),font=('Arial',20))
+            emoji_classe_label_comida.pack()
+            emoji_classe_label_comida.bind("<Button-1>",lambda event, e = 4: classe_click(e))
+            emoji_classe_list.append(emoji_classe_label_comida)
+
+            
+            
+            carregar_emoji()
+
+            emoji_frame.pack_forget()
+        elif (aberto[0] == 'Aberto' and solicitacao == 'Desapareça') or (aberto[0] == 'Aberto' and solicitacao == 'Abrir'):
             aberto[0] = 'Invisivel'
             emoji_frame.pack_forget()
         elif aberto[0] == 'Invisivel' and solicitacao == 'Abrir':
@@ -285,7 +362,7 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
             
             if conexao_validacao == True:
                 chat_window = Gerenciar_Janela('Crie-Toplevel',
-                                            {'dimensoes': '800x500','alinhamento_tela': 'nenhum' },
+                                            {'dimensoes': '800x525','alinhamento_tela': 'nenhum' },
                                             f'Chat Online - {name} e #cliente que conecta junto')#colocar nome de quem conectou junto
 
                 chat_box = tk.Frame(chat_window)
@@ -313,7 +390,6 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
                 emoji_label.pack(side='left')
                 aberto = ['Não aberto']
                 emoji_label.bind("<Button-1>", lambda event: widget_emoji(chat_window,'Abrir', event))
-
                 
 
                 send_button = ttk.Button(input, text="Enviar", command=Enviar_mensagem)
@@ -325,6 +401,9 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
 
                 chat_box.pack(fill='x', padx=10, pady=10)
                 input.pack(fill='x', padx=10, pady=10) 
+
+                widget_emoji(chat_window,'Abrir')
+
                 Thread_receber = threading.Thread(target=Receber_mensagens)
                 Thread_receber.start()
                 chat_window.protocol("WM_DELETE_WINDOW", lambda: Fechar_janela_chat())
