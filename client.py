@@ -74,9 +74,9 @@ def Gerenciar_Janela(comando,config_janela,titulo,window_reserva=None):
  #A função tem como objetivo que seja passado uma string e ela retorne se os parametros de analise da string estão aceitos, por exemplo, o usuário não pode colocar um caractere alfabetico no input de ipv4 do server ou de porta do servidor
 
 
-def Tratar_input(string,id,window_antiga,pode_numero,pode_char_esp,pode_char_alfa,limite_max_char,limite_min_char):
+def Tratar_input(string,id,window_antiga,pode_numero,pode_char_esp,pode_char_alfa,limite_max_char,limite_min_char,numero_minimo):
     validação = True
-    validação_numero = validação_char_esp = validação_char_alfa = validação_max_limite = validação_min_limite = validação_vazia  = ''
+    validação_numero = validação_char_esp = validação_char_alfa = validação_max_limite = validação_min_limite = validação_vazia = validacao_numero_minimo  = ''
 
     string = string.strip()
     if string == '':
@@ -97,6 +97,9 @@ def Tratar_input(string,id,window_antiga,pode_numero,pode_char_esp,pode_char_alf
     if (limite_min_char != False) and (limite_min_char > len(string)):
         validação = False
         validação_min_limite = 'Erro'
+    if (numero_minimo != False) and ((string =='')  or (int(string) <= numero_minimo) ):
+        validação = False
+        validacao_numero_minimo = 'Erro'
     if validação == False: #Abaixo será criado uma janela personalizada baseada no erro especifico do usuário ao colocar o input não compativel
         window_antiga.withdraw() 
         window_erro = Gerenciar_Janela('Crie',{'dimensoes' : '300x127', 'alinhamento_tela': 'centralizado'},"Aviso")
@@ -107,6 +110,8 @@ def Tratar_input(string,id,window_antiga,pode_numero,pode_char_esp,pode_char_alf
             ttk.Label(window_erro,text='- Caracteres especiais não são permitidos!',font=('Arial',10,'bold'),wraplength=300,background='white').pack()
         if validação_char_alfa == 'Erro':
             ttk.Label(window_erro,text='- Caracteres do alfabeto não são permitidos!',font=('Arial',10,'bold'),wraplength=300,background='white').pack()
+        if validacao_numero_minimo == 'Erro':
+            ttk.Label(window_erro,text=f'- Número da porta precisa ser acima de {numero_minimo}',font=('Arial',10,'bold'),wraplength=300,background='white').pack()
         if validação_max_limite == 'Erro':     
             ttk.Label(window_erro,text=f'- É necessário que o(a) {id} contenha até {limite_max_char} caracteres!',font=('Arial',10,'bold'),wraplength=300,background='white').pack()
         if validação_min_limite == 'Erro':
@@ -294,9 +299,19 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
             Abrir_emojis[0] = 'Aberto'
             emoji_frame.pack(side='left')
 
-    nmr_porta, validação_a = Tratar_input(nmr_porta,'porta',window_antiga,True,False,False,5,4)
+    def apagar_emoji(entry): #Essa função é necessário pois o GUI em questão não lida corretamente com o apagar de emojis no input, ao ser apagado de forma crua ele deixa um caractere invalido no lugar do emoji
+        if len(entry.get()) > 0 and emoji.is_emoji(entry.get()[-1]): #Aqui verificamos se há emoji presente no input, caso sim, é salvo o texto sem o ultimo caractere, e é colocado um caractere não emoji no final
+            entry_text = entry.get()                                 #Portanto, quando acabar a função, será a pagado o caractere não emoji pelo bind padrão em que o backspace apaga o ultimo char, porém o ultimo char agora é um char que não causa problemas
+            new_text = entry_text[:-1]  # Obtém todo o texto, exceto o último caractere
+            new_text +='a'
+            entry.delete(0, tk.END)  # Limpa o texto atual
+            entry.insert(0, new_text)  # Define o novo texto no Entry  
+        
+
+
+    nmr_porta, validação_a = Tratar_input(nmr_porta,'porta',window_antiga,True,False,False,5,4,4000)
     if validação_a == True:
-        senha, validação_b = Tratar_input(senha,'senha',window_antiga,True,True,True,8,3)
+        senha, validação_b = Tratar_input(senha,'senha',window_antiga,True,True,True,8,3,False)
         if validação_b == True:
             #Abaixo mandamos para o server, a mensagem contendo os 4 parametros abaixo, para o chat criar um novo chat lá com base nessas informações
             message = f'{nmr_porta}+{senha}+{qtd_pessoas}+{pedido}'
@@ -374,6 +389,7 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
 
                 message_input = ttk.Entry(input, width=30)
                 message_input.pack(side='left',padx=10)
+                message_input.bind('<BackSpace>', lambda event, entry=message_input: apagar_emoji(entry))
 
 
                 emoji_text = emoji.emojize(':slightly_smiling_face:') #O texto de emoji ao lado do input do usuario se torna um botão que mostra os emojis disponiveis para serem rapidamente usados
@@ -461,7 +477,7 @@ def Inicio(): #Nesta janela o usuário escolherá se prefere criar um grupo, ent
 def Conectar_ao_servidor(name_entry,window_antiga):
     def Teste_conexão(): #Abaixo, será feito uma tentativa de comunicação com o servidor
         global ip_server
-        ip_server, validação = Tratar_input(input_ip_servidor.get(),'ipv4',window,True,False,False,15,7)
+        ip_server, validação = Tratar_input(input_ip_servidor.get(),'ipv4',window,True,False,False,15,7,False)
         if validação == True:
             try:
                 global connection
@@ -476,7 +492,7 @@ def Conectar_ao_servidor(name_entry,window_antiga):
             return
     
     global name 
-    name, validação = Tratar_input(name_entry,'nome',window_antiga,False,False,True,16,False)
+    name, validação = Tratar_input(name_entry,'nome',window_antiga,False,False,True,16,False,False)
     if validação == True: #Após validar o nome, pedirá o ipv4 do server
         window = Gerenciar_Janela('Delete e crie',{'dimensoes':'300x127', 'alinhamento_tela' : 'centralizado'},'Conecte ao Servidor')
 
