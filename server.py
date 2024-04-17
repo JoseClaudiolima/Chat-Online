@@ -37,16 +37,35 @@ def Create_chat(nmr_porta,senha,qtd_pessoas,pedido,socket_primario_client):
         return
     
     if nmr_porta not in portas:  #Para impedir que crie/abra portas de numeros iguais
-        global server_pareamento_direto
-        server_pareamento_direto = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_pareamento_direto.bind((str(ipv4_address), int(nmr_porta)))
-        server_pareamento_direto.listen(int(qtd_pessoas))    
-        #portas[nmr_porta] = senha
-        portas[nmr_porta] = [senha, qtd_pessoas]
-        print(f'Servidor aguardando conexões, em: {nmr_porta}')
+
+        #Abaixo será criado um socket de teste para ver se é possivel abrir um server nessa porta
+        #Isso foi necessário pois, se não tivesse um socket de teste, encontraria MUITOS problemas de socket ao fechar um socket de server em que teve a porta errada, ou ip errado, etc...
+        server_teste_pareamento_direto = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        teste = False
+        try:
+            # Tenta criar um socket na porta especificada
+            server_teste_pareamento_direto.bind((str(ipv4_address), int(nmr_porta)))
+            server_teste_pareamento_direto.listen(int(qtd_pessoas))
+            teste = True
+            server_teste_pareamento_direto.close()
+        except (ConnectionRefusedError, TimeoutError, OSError):
+            with server_teste_pareamento_direto: #fecha completamente o socket de teste
+                #Caso tenha dado erro, "o with:" é como se fosse um apoio ao .close() .Pois apenas o .close() não foi o suficiente para finalizar o socket
+                socket_primario_client.send('Recusado, Porta nao disponivel'.encode())
+                server_teste_pareamento_direto.close()
+            return
+        
+        if teste == True: #Caso o teste tenha tido sucesso, será criado o socket de fato que irá fazer a abertura do server
+            global server_pareamento_direto
+            server_pareamento_direto = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            server_pareamento_direto.bind((str(ipv4_address), int(nmr_porta)))
+            server_pareamento_direto.listen(int(qtd_pessoas))
+
+            portas[nmr_porta] = [senha, qtd_pessoas]
+            print(f'Servidor aguardando conexões, em: {nmr_porta}')
 
     if (nmr_porta in portas) and len(client_socket_chat) <int(portas[nmr_porta][1]) : #Para: 'Trancar' o grupo chat, entre a quantidade de pessoas especificada
-        if portas[nmr_porta][0] == senha: #portas[nmr_porta] = senha
+        if portas[nmr_porta][0] == senha: #exemplo:  {'8888' : '123'}, if '123' == senha 
             socket_primario_client.send('Autorizado'.encode())
             client_socket_create_chat, addr = server_pareamento_direto.accept()
             print(f'Conexão recebida de ip:{addr[0]} porta do cliente:{addr[1]} no chat de porta: {nmr_porta}')
@@ -59,6 +78,7 @@ def Create_chat(nmr_porta,senha,qtd_pessoas,pedido,socket_primario_client):
             socket_primario_client.send('Recusado, senha está errada!'.encode())
     else:
         socket_primario_client.send('Recusado, Grupo esta cheio'.encode())
+
 
 def escuta_solicitacao_primaria(client_socket,id_cliente):
     usuarios_conexão_basica.append(client_socket)
@@ -73,7 +93,6 @@ def escuta_solicitacao_primaria(client_socket,id_cliente):
             Create_chat(msg[0],msg[1],msg[2],msg[3],client_socket) # nmr_porta,senha,qtd_pessoas
         except ConnectionError:
             break
-
     
 
 #Aqui é só para conectar o client no server
@@ -85,7 +104,8 @@ def Pareamento_inicial():
 
     server_pareamento_inicial.bind((str(ipv4_address), 3000)) #associa o socket a um endereço ip e porta
     server_pareamento_inicial.listen(5) #servidor aceita até no maximo 5 conexões de clientes simultaneas
-    print(f'Servidor aguardando conexões... ipv4 do server: {ipv4_address}')
+    print(f'Servidor aguardando conexões...')
+    print(f'IPv4 do servidor já está copiado na area de transferencia! ({ipv4_address})')
     pyperclip.copy(ipv4_address) #copia (como se fosse ctrl+c) no ipv4 do server, não precisa mais copiar do terminal do servidor
 
     while True: #Esse looping é para: aceitar novos clientes ao server

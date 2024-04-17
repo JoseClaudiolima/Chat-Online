@@ -72,6 +72,8 @@ def Gerenciar_Janela(comando,config_janela,titulo,window_reserva=None):
         return window_Toplevel
  
  #A função tem como objetivo que seja passado uma string e ela retorne se os parametros de analise da string estão aceitos, por exemplo, o usuário não pode colocar um caractere alfabetico no input de ipv4 do server ou de porta do servidor
+
+
 def Tratar_input(string,id,window_antiga,pode_numero,pode_char_esp,pode_char_alfa,limite_max_char,limite_min_char):
     validação = True
     validação_numero = validação_char_esp = validação_char_alfa = validação_max_limite = validação_min_limite = validação_vazia  = ''
@@ -336,18 +338,23 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
                         Tratar_janela_erro(window_antiga, '400x127', 2, ['Aviso!!','- A senha está incorreta!']
                                            , [('Arial',13, 'bold'),('Arial',11)] , [(5),(0)])
                         return
+                    elif confirmacao == 'Recusado, Porta nao disponivel':
+                        escutando = False
+                        conexao_validacao = False
+                        Tratar_janela_erro(window_antiga, '400x127', 2, ['Aviso!!','- A porta escolhida está indisponivel!']
+                                           , [('Arial',13, 'bold'),('Arial',11)] , [(5),(0)])
+                        return
                 except (ConnectionError,ConnectionRefusedError, TimeoutError, OSError, BlockingIOError, socket.error, socket.timeout) as a:
                         print(f'Erro: {a}') #Pode apagar isso antes de entregar a aps
                         escutando = False
                         conexao_validacao = False
                         return
             connection.settimeout(None) #Desfaz o escuta até no max 4s    
-
-            cliente_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            cliente_socket.connect((ip_server, int(nmr_porta)))
               
             
             if conexao_validacao == True: #Caso a conexão de entrar/criar chat for aceita, será configurado todo os detalhes do chat
+                cliente_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                cliente_socket.connect((ip_server, int(nmr_porta)))
                 chat_window = Gerenciar_Janela('Crie-Toplevel',
                                             {'dimensoes': '800x525','alinhamento_tela': 'nenhum' },
                                             f'Chat Online - {name} e #cliente que conecta junto')#colocar nome de quem conectou junto
@@ -449,6 +456,7 @@ def Inicio(): #Nesta janela o usuário escolherá se prefere criar um grupo, ent
     direct_chat_button.pack(pady=(20,0))
     create_chat_button.pack(pady=10)
     conect_chat_button.pack(padx=20)
+
 
 def Conectar_ao_servidor(name_entry,window_antiga):
     def Teste_conexão(): #Abaixo, será feito uma tentativa de comunicação com o servidor
