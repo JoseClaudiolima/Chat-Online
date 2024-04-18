@@ -422,12 +422,22 @@ def config_chat(box,qtd_pessoas,dimensoes,diplomacia): #Nesta janela o usuario d
     window = Gerenciar_Janela('Delete e crie',
                      {'dimensoes' : dimensoes, 'alinhamento_tela': 'centralizado'}, #Alterar largura
                      'Configuração - Chat')
+    
+    box_voltar = tk.Frame(window)
+    box_voltar.pack(side='left',fill='y')
     box = tk.Frame(window)
     box.pack()    
     box2 = tk.Frame(box)
     box2.pack()
     box3 = tk.Frame(box)
     box3.pack()
+
+    style = ttk.Style()
+    style.configure('Vertical.TButton',font=('Consolas',12))
+
+
+    btn_voltar = ttk.Button(box_voltar,text='V\nO\nL\nT\nA\nR',width=1, style='Vertical.TButton',command=Inicio)
+    btn_voltar.pack(fill='y',expand=True)
 
 
     label_porta = ttk.Label(box2,text=f'{diplomacia} uma porta de rede: ')
@@ -536,8 +546,7 @@ def Entrada(): #Criará a janela inicial, pedindo o nome do usuario como entrada
     name_entry.focus_set()  # Define o foco para o Entry do nome do usuário
     name_entry.bind("<Return>", lambda event: enter_button.invoke()) #Ao pressionar enter, ele chamada a função do botão
 
-    window.mainloop()
     window.protocol("WM_DELETE_WINDOW", lambda: window.quit())  # Fechar janela principal sem erro
-          
+    window.mainloop()          
 
 Entrada()
