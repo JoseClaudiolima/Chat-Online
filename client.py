@@ -102,7 +102,7 @@ def Tratar_input(string,id,window_antiga,pode_numero,pode_char_esp,pode_char_alf
         validacao_numero_minimo = 'Erro'
     if validação == False: #Abaixo será criado uma janela personalizada baseada no erro especifico do usuário ao colocar o input não compativel
         window_antiga.withdraw() 
-        window_erro = Gerenciar_Janela('Crie',{'dimensoes' : '300x127', 'alinhamento_tela': 'centralizado'},"Aviso")
+        window_erro = Gerenciar_Janela('Crie',{'dimensoes' : '325x150', 'alinhamento_tela': 'centralizado'},"Aviso")
         ttk.Label(window_erro,text='Aviso!!',font=('Arial',13, 'bold'),background='white').pack(pady=(5))
         if validação_numero == 'Erro':
             ttk.Label(window_erro,text='- Números não são permitidos!',font=('Arial',10,'bold'),wraplength=300,background='white').pack()
@@ -111,7 +111,7 @@ def Tratar_input(string,id,window_antiga,pode_numero,pode_char_esp,pode_char_alf
         if validação_char_alfa == 'Erro':
             ttk.Label(window_erro,text='- Caracteres do alfabeto não são permitidos!',font=('Arial',10,'bold'),wraplength=300,background='white').pack()
         if validacao_numero_minimo == 'Erro':
-            ttk.Label(window_erro,text=f'- Número da porta precisa ser acima de {numero_minimo}',font=('Arial',10,'bold'),wraplength=300,background='white').pack()
+            ttk.Label(window_erro,text=f'- Número do(a) {id} precisa ser acima de {numero_minimo}',font=('Arial',10,'bold'),wraplength=300,background='white').pack()
         if validação_max_limite == 'Erro':     
             ttk.Label(window_erro,text=f'- É necessário que o(a) {id} contenha até {limite_max_char} caracteres!',font=('Arial',10,'bold'),wraplength=300,background='white').pack()
         if validação_min_limite == 'Erro':
@@ -125,7 +125,7 @@ def Tratar_input(string,id,window_antiga,pode_numero,pode_char_esp,pode_char_alf
     return string, True
 
 
-def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
+def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
     def Fechar_janela_chat():
         chat_window.destroy() #Isso aqui destroy a chat_window apenas na primeira thread
         msg_close = "Protocolo_close"
@@ -308,117 +308,132 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,window_antiga,pedido):
             entry.insert(0, new_text)  # Define o novo texto no Entry  
         
 
+    nmr_porta, validação_porta = Tratar_input(nmr_porta,'porta',window_antiga,True,False,False,5,4,4000)
+    if validação_porta == True:
+        senha, validação_senha = Tratar_input(senha,'senha',window_antiga,True,True,True,8,3,False)
+    if validação_porta == True and validação_senha == True:
+        if qtd_pessoas != False:
+            qtd_pessoas, validação_qtd_p = Tratar_input(qtd_pessoas,'quantidade de pessoas',window_antiga,True,False,False,2,False,1)
+            nome_gp, validação_nome_gp = Tratar_input(nome_gp,'nome do grupo',window_antiga,True,True,True,12,1,False)
+        else:
+            validação_qtd_p = True
+            validação_nome_gp = True
+    if validação_porta == True and validação_senha == True and validação_qtd_p == True and validação_nome_gp == True:
+        qtd_pessoas = int(qtd_pessoas)
 
-    nmr_porta, validação_a = Tratar_input(nmr_porta,'porta',window_antiga,True,False,False,5,4,4000)
-    if validação_a == True:
-        senha, validação_b = Tratar_input(senha,'senha',window_antiga,True,True,True,8,3,False)
-        if validação_b == True:
-            #Abaixo mandamos para o server, a mensagem contendo os 4 parametros abaixo, para o chat criar um novo chat lá com base nessas informações
-            message = f'{nmr_porta}+{senha}+{qtd_pessoas}+{pedido}'
+        if nome_gp != False:
+            #Abaixo mandamos para o server, a mensagem contendo os 5 parametros abaixo, para o chat criar um novo chat lá com base nessas informações
+            message = f'{nmr_porta}+{senha}+{qtd_pessoas}+{pedido}+{nome_gp}'
+            connection.send(message.encode())
+        else:
+             #Abaixo mandamos para o server, a mensagem contendo os 5 parametros abaixo, para o chat criar um novo chat lá com base nessas informações
+            message = f'{nmr_porta}+{senha}+{qtd_pessoas}+{pedido}+{nome_gp}'
             connection.send(message.encode())
 
-            escutando = True
-            connection.settimeout(4) #Escuta por no maximo 4s se conseguiu fazer conexão com o server
-            while escutando: #Isso aqui é para ver se o servidor aceita mais uma conexão no chat, ou se já esta cheio ou se a senha está errada
-                try:
-                    confirmacao = connection.recv(1024).decode()
-                    if confirmacao == 'Autorizado':
-                        escutando = False
-                        conexao_validacao = True
-                        break
-                    elif confirmacao == 'Recusado, Grupo nao existe':
-                        escutando = False
-                        conexao_validacao = False
-                        Tratar_janela_erro(window_antiga, '400x127', 2, ['Aviso!!','- O grupo em questão não existe!']
-                                           , [('Arial',13, 'bold'),('Arial',11)] , [(5),(0)])
-                        Inicio()
-                        return
-                    elif confirmacao == 'Recusado, Grupo esta cheio':
-                        escutando = False
-                        conexao_validacao = False
-                        Tratar_janela_erro(window_antiga, '400x127', 2, ['Aviso!!','- O grupo em questão está cheio!']
-                                           , [('Arial',13, 'bold'),('Arial',11)] , [(5),(0)])
-                        Inicio()
-                        return
-                    elif confirmacao == 'Recusado, Grupo já criado':
-                        escutando = False
-                        conexao_validacao = False
-                        Tratar_janela_erro(window_antiga, '400x127', 2, ['Aviso!!','- O grupo em questão já foi criado!']
-                                           , [('Arial',13, 'bold'),('Arial',11)] , [(5),(0)])
-                        Inicio()
-                        return
-                    elif confirmacao == 'Recusado, senha está errada!':
-                        escutando = False
-                        conexao_validacao = False
-                        Tratar_janela_erro(window_antiga, '400x127', 2, ['Aviso!!','- A senha está incorreta!']
-                                           , [('Arial',13, 'bold'),('Arial',11)] , [(5),(0)])
-                        return
-                    elif confirmacao == 'Recusado, Porta nao disponivel':
-                        escutando = False
-                        conexao_validacao = False
-                        Tratar_janela_erro(window_antiga, '400x127', 2, ['Aviso!!','- A porta escolhida está indisponivel!']
-                                           , [('Arial',13, 'bold'),('Arial',11)] , [(5),(0)])
-                        return
-                except (ConnectionError,ConnectionRefusedError, TimeoutError, OSError, BlockingIOError, socket.error, socket.timeout) as a:
-                        print(f'Erro: {a}') #Pode apagar isso antes de entregar a aps
-                        escutando = False
-                        conexao_validacao = False
-                        return
-            connection.settimeout(None) #Desfaz o escuta até no max 4s    
-              
+        escutando = True
+        connection.settimeout(4) #Escuta por no maximo 4s se conseguiu fazer conexão com o server
+        while escutando: #Isso aqui é para ver se o servidor aceita mais uma conexão no chat, ou se já esta cheio ou se a senha está errada
+            try:
+                confirmacao = connection.recv(1024).decode()
+                if confirmacao == 'Recusado, Grupo nao existe':
+                    escutando = False
+                    conexao_validacao = False
+                    Tratar_janela_erro(window_antiga, '400x127', 2, ['Aviso!!','- O grupo em questão não existe!']
+                                        , [('Arial',13, 'bold'),('Arial',11)] , [(5),(0)])
+                    Inicio()
+                    return
+                elif confirmacao == 'Recusado, Grupo esta cheio':
+                    escutando = False
+                    conexao_validacao = False
+                    Tratar_janela_erro(window_antiga, '400x127', 2, ['Aviso!!','- O grupo em questão está cheio!']
+                                        , [('Arial',13, 'bold'),('Arial',11)] , [(5),(0)])
+                    Inicio()
+                    return
+                elif confirmacao == 'Recusado, Grupo já criado':
+                    escutando = False
+                    conexao_validacao = False
+                    Tratar_janela_erro(window_antiga, '400x127', 2, ['Aviso!!','- O grupo em questão já foi criado!']
+                                        , [('Arial',13, 'bold'),('Arial',11)] , [(5),(0)])
+                    Inicio()
+                    return
+                elif confirmacao == 'Recusado, senha está errada!':
+                    escutando = False
+                    conexao_validacao = False
+                    Tratar_janela_erro(window_antiga, '400x127', 2, ['Aviso!!','- A senha está incorreta!']
+                                        , [('Arial',13, 'bold'),('Arial',11)] , [(5),(0)])
+                    return
+                elif confirmacao == 'Recusado, Porta nao disponivel':
+                    escutando = False
+                    conexao_validacao = False
+                    Tratar_janela_erro(window_antiga, '400x127', 2, ['Aviso!!','- A porta escolhida está indisponivel!']
+                                        , [('Arial',13, 'bold'),('Arial',11)] , [(5),(0)])
+                    return
+                confirmacao = confirmacao.split('+')
+                if confirmacao[0] == 'Autorizado':
+                    nome_grupo = confirmacao[1]
+                    escutando = False
+                    conexao_validacao = True
+                    break
+            except (ConnectionError,ConnectionRefusedError, TimeoutError, OSError, BlockingIOError, socket.error, socket.timeout) as a:
+                    print(f'Erro: {a}') #Pode apagar isso antes de entregar a aps
+                    escutando = False
+                    conexao_validacao = False
+                    return
+        connection.settimeout(None) #Desfaz o escuta até no max 4s    
             
-            if conexao_validacao == True: #Caso a conexão de entrar/criar chat for aceita, será configurado todo os detalhes do chat
-                cliente_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                cliente_socket.connect((ip_server, int(nmr_porta)))
-                chat_window = Gerenciar_Janela('Crie-Toplevel',
-                                            {'dimensoes': '800x525','alinhamento_tela': 'nenhum' },
-                                            f'Chat Online - {name} e #cliente que conecta junto')#colocar nome de quem conectou junto
+        
+        if conexao_validacao == True: #Caso a conexão de entrar/criar chat for aceita, será configurado todo os detalhes do chat
+            cliente_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            cliente_socket.connect((ip_server, int(nmr_porta)))
+            chat_window = Gerenciar_Janela('Crie-Toplevel',
+                                        {'dimensoes': '800x525','alinhamento_tela': 'nenhum' },
+                                        f'Chat Online - {nome_grupo}')#colocar nome de quem conectou junto
 
-                chat_box = tk.Frame(chat_window)
-                input = tk.Frame(chat_window)
+            chat_box = tk.Frame(chat_window)
+            input = tk.Frame(chat_window)
 
-                chat_display = ttk.Text(chat_box,font=("Arial", 12),wrap='word',state='disabled',height=10,width=120)
-                chat_display.pack(side = 'left',padx=10)
-                # Configuração de tags para alinhamento
-                chat_display.tag_configure('right', justify='right')
-                chat_display.tag_configure('left', justify='left')
-                chat_display.tag_configure('emoticon_tag', font=('Arial',20))
+            chat_display = ttk.Text(chat_box,font=("Arial", 12),wrap='word',state='disabled',height=10,width=120)
+            chat_display.pack(side = 'left',padx=10)
+            # Configuração de tags para alinhamento
+            chat_display.tag_configure('right', justify='right')
+            chat_display.tag_configure('left', justify='left')
+            chat_display.tag_configure('emoticon_tag', font=('Arial',20))
 
-                scrollbar = ttk.Scrollbar(chat_box, command=chat_display.yview)
-                scrollbar.pack(side='right', padx=10, fill='y')  # fill='y' para preencher a altura disponível
+            scrollbar = ttk.Scrollbar(chat_box, command=chat_display.yview)
+            scrollbar.pack(side='right', padx=10, fill='y')  # fill='y' para preencher a altura disponível
 
-                message_input = ttk.Entry(input, width=30)
-                message_input.pack(side='left',padx=10)
-                message_input.bind('<BackSpace>', lambda event, entry=message_input: apagar_emoji(entry))
-
-
-                emoji_text = emoji.emojize(':slightly_smiling_face:') #O texto de emoji ao lado do input do usuario se torna um botão que mostra os emojis disponiveis para serem rapidamente usados
-                emoji_label = ttk.Label(input, text=emoji_text,font=('Arial',32))
-                emoji_label.pack(side='left')
-                Abrir_emojis = ['Não aberto']
-                emoji_label.bind("<Button-1>", lambda event: widget_emoji(chat_window,'Abrir', event))
-                
-
-                send_button = ttk.Button(input, text="Enviar", command=Enviar_mensagem)
-                send_button.pack(side='left',padx=8)
-                message_input.bind("<Return>", lambda event: send_button.invoke())
-
-                clear_button = ttk.Button(input, text="Limpar", command=Limpar_chat)
-                clear_button.pack(side='left',padx=7)
-
-                chat_box.pack(fill='x', padx=10, pady=10)
-                input.pack(fill='x', padx=10, pady=10) 
-
-                widget_emoji(chat_window,'Abrir')
-
-                Thread_receber = threading.Thread(target=Receber_mensagens) #É iniciado uma thread para rodar separadamente no aguardo de mensagens enviadas pelo servidor
-                Thread_receber.start()
-                chat_window.protocol("WM_DELETE_WINDOW", lambda: Fechar_janela_chat())
-            else:
-                cliente_socket.close()
+            message_input = ttk.Entry(input, width=30)
+            message_input.pack(side='left',padx=10)
+            message_input.bind('<BackSpace>', lambda event, entry=message_input: apagar_emoji(entry))
 
 
-def config_chat(box,qtd_pessoas,dimensoes,diplomacia): #Nesta janela o usuario definirá a configuração do chat escolhido
+            emoji_text = emoji.emojize(':slightly_smiling_face:') #O texto de emoji ao lado do input do usuario se torna um botão que mostra os emojis disponiveis para serem rapidamente usados
+            emoji_label = ttk.Label(input, text=emoji_text,font=('Arial',32))
+            emoji_label.pack(side='left')
+            Abrir_emojis = ['Não aberto']
+            emoji_label.bind("<Button-1>", lambda event: widget_emoji(chat_window,'Abrir', event))
+            
+
+            send_button = ttk.Button(input, text="Enviar", command=Enviar_mensagem)
+            send_button.pack(side='left',padx=8)
+            message_input.bind("<Return>", lambda event: send_button.invoke())
+
+            clear_button = ttk.Button(input, text="Limpar", command=Limpar_chat)
+            clear_button.pack(side='left',padx=7)
+
+            chat_box.pack(fill='x', padx=10, pady=10)
+            input.pack(fill='x', padx=10, pady=10) 
+
+            widget_emoji(chat_window,'Abrir')
+
+            Thread_receber = threading.Thread(target=Receber_mensagens) #É iniciado uma thread para rodar separadamente no aguardo de mensagens enviadas pelo servidor
+            Thread_receber.start()
+            chat_window.protocol("WM_DELETE_WINDOW", lambda: Fechar_janela_chat())
+        else:
+            cliente_socket.close()
+
+
+def config_chat(box,conexao,dimensoes,diplomacia): #Nesta janela o usuario definirá a configuração do chat escolhido
     window = Gerenciar_Janela('Delete e crie',
                      {'dimensoes' : dimensoes, 'alinhamento_tela': 'centralizado'}, #Alterar largura
                      'Configuração - Chat')
@@ -452,18 +467,21 @@ def config_chat(box,qtd_pessoas,dimensoes,diplomacia): #Nesta janela o usuario d
     input_senha = ttk.Entry(box3)
     input_senha.pack()
 
-    if qtd_pessoas == 'cliente escolhe':
+    if conexao == 'criar grupo':
         label_qtd = ttk.Label(box3,text='Quantidade maxima de pessoas: ')
         label_qtd.pack(pady=(10,5))
-
         input_qtd_pessoa = ttk.Entry(box3)
         input_qtd_pessoa.pack()
-        confirm_button = ttk.Button(box,text='Confirmar', command=lambda: Chat_App(input_porta.get(),input_senha.get(),int(input_qtd_pessoa.get()),window,'criar grupo'))
-        input_qtd_pessoa.bind("<Return>", lambda event: confirm_button.invoke())
-    elif qtd_pessoas == 'host ja escolheu':
-        confirm_button = ttk.Button(box,text='Confirmar', command=lambda: Chat_App(input_porta.get(),input_senha.get(),False,window,'entrar grupo'))
-    else: 
-        confirm_button = ttk.Button(box,text='Confirmar', command=lambda: Chat_App(input_porta.get(),input_senha.get(),2,window,'entrar direct'))
+
+        label_nome_gp = ttk.Label(box3,text='Escolha o nome do grupo: ')
+        label_nome_gp.pack(pady=(10,5))
+        input_nome_gp = ttk.Entry(box3)
+        input_nome_gp.pack()
+
+        confirm_button = ttk.Button(box,text='Confirmar', command=lambda: Chat_App(input_porta.get(),input_senha.get(),input_qtd_pessoa.get(),input_nome_gp.get(),window,'criar grupo'))
+        input_nome_gp.bind("<Return>", lambda event: confirm_button.invoke())
+    elif conexao == 'entrar em grupo':
+        confirm_button = ttk.Button(box,text='Confirmar', command=lambda: Chat_App(input_porta.get(),input_senha.get(),False,False,window,'entrar grupo'))
 
     input_porta.focus_set()  # Define o foco para o Entry do nome do usuário
     input_senha.bind("<Return>", lambda event: confirm_button.invoke())#Ao pressionar enter, ele chamada a função do botão
@@ -475,12 +493,10 @@ def Inicio(): #Nesta janela o usuário escolherá se prefere criar um grupo, ent
     box = tk.Frame(window)
     box.pack()
 
-    direct_chat_button = ttk.Button(box, text='Conexão Direta', width = 15, command= lambda:config_chat(box,2,'300x200','Insira'))
-    create_chat_button = ttk.Button(box, text='Criar um Grupo', width = 15, command= lambda:config_chat(box,'cliente escolhe','300x250','Escolha'))
-    conect_chat_button = ttk.Button(box, text='Unir-se a Grupo', width = 15, command= lambda: config_chat(box,'host ja escolheu','300x200','Insira'))
+    create_chat_button = ttk.Button(box, text='Criar um Grupo', width = 15, command= lambda:config_chat(box,'criar grupo','325x325','Escolha'))
+    conect_chat_button = ttk.Button(box, text='Unir-se a Grupo', width = 15, command= lambda: config_chat(box,'entrar em grupo','300x200','Insira'))
 
-    direct_chat_button.pack(pady=(20,0))
-    create_chat_button.pack(pady=10)
+    create_chat_button.pack(pady=(20,10))
     conect_chat_button.pack(padx=20)
 
 

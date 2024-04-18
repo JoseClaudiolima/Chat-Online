@@ -7,7 +7,7 @@ client_socket_chat, client_chat = [], []
 
 #porta entre 1024 a 49151
 #futuramente usar essa senha para permitir acesso
-def Create_chat(nmr_porta,senha,qtd_pessoas,pedido,socket_primario_client):
+def Create_chat(nmr_porta,senha,qtd_pessoas,pedido,nome_gp,socket_primario_client):
     def comunicacao(socket_do_client_chat):
         while True: #Esse looping é para: Receber as mensagens pelos clientes e enviar a todos do grupo
             try:
@@ -61,12 +61,13 @@ def Create_chat(nmr_porta,senha,qtd_pessoas,pedido,socket_primario_client):
             server_pareamento_direto.bind((str(ipv4_address), int(nmr_porta)))
             server_pareamento_direto.listen(int(qtd_pessoas))
 
-            portas[nmr_porta] = [senha, qtd_pessoas]
+            portas[nmr_porta] = [senha, qtd_pessoas,nome_gp] #ex: portas[8888] >> {123,'20',grupo da familia}
             print(f'Servidor aguardando conexões, em: {nmr_porta}')
 
     if (nmr_porta in portas) and len(client_socket_chat) <int(portas[nmr_porta][1]) : #Para: 'Trancar' o grupo chat, entre a quantidade de pessoas especificada
         if portas[nmr_porta][0] == senha: #exemplo:  {'8888' : '123'}, if '123' == senha 
-            socket_primario_client.send('Autorizado'.encode())
+            autorizado = f'Autorizado+{portas[nmr_porta][2]}'
+            socket_primario_client.send(autorizado.encode())
             client_socket_create_chat, addr = server_pareamento_direto.accept()
             print(f'Conexão recebida de ip:{addr[0]} porta do cliente:{addr[1]} no chat de porta: {nmr_porta}')
             client_socket_chat.append(client_socket_create_chat)       
@@ -90,7 +91,7 @@ def escuta_solicitacao_primaria(client_socket,id_cliente):
             if not mensagem:
                 break
             msg = mensagem.split('+') 
-            Create_chat(msg[0],msg[1],msg[2],msg[3],client_socket) # nmr_porta,senha,qtd_pessoas
+            Create_chat(msg[0],msg[1],msg[2],msg[3],msg[4],client_socket) # nmr_porta,senha,qtd_pessoas,nome_gp, e o client_socket
         except ConnectionError:
             break
     
