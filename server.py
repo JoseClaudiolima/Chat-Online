@@ -2,26 +2,24 @@ import socket
 import threading
 import pyperclip
 
-usuarios_conexão_basica, portas = [], {}
-client_socket_chat, client_chat = [], []
+usuarios_conexão_basica = [] #Lista dos usuários que fizeram a primeira conexão com o server
+portas = {} #Dicionario das portas abertas com sucesos, contendo : portas['nmr_porta'] : {senha, qtd_max_pessoas, nome_gp, lista_dos_cliente_conectados_ao_chat[] }
 
-#porta entre 1024 a 49151
-#futuramente usar essa senha para permitir acesso
-def Create_chat(nmr_porta,senha,qtd_pessoas,pedido,nome_gp,socket_primario_client):
+def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,socket_primario_client):
     def comunicacao(socket_do_client_chat):
         while True: #Esse looping é para: Receber as mensagens pelos clientes e enviar a todos do grupo
             try:
                 mensagem_do_chat = socket_do_client_chat.recv(1024).decode()
-                if mensagem_do_chat == "Protocolo_close":
-                    client_socket_chat.remove(socket_do_client_chat)
+                if mensagem_do_chat == "Protocolo_close": #Ao cliente avisar que desconectará, o server remove do chat e fecha conexão
+                    portas[nmr_porta][3].remove(socket_do_client_chat)
                     socket_do_client_chat.close()
-                    if len(client_socket_chat) == 0:
+                    if len(portas[nmr_porta][3]) == 0: #Se o client for o ultimo do chat, o server fecha o chat, e libera a porta para ser criado por outros
                         del portas[nmr_porta]
                     break
-                for c in client_socket_chat:
+                for c in portas[nmr_porta][3]: #Nesse looping: Para cada usuario do grupo, será enviado a mensagem em questão
                     try:
                         c.send(mensagem_do_chat.encode())
-                        #print(mensagem_do_chat) #Para provar que a criptografia é de ponta a ponta
+                        #print(mensagem_do_chat) #Este print prova que a criptografia é de ponta a ponta, o server não tem a mensagem descriptografada
                     except ConnectionError:
                         continue
             except ConnectionError:
@@ -43,9 +41,8 @@ def Create_chat(nmr_porta,senha,qtd_pessoas,pedido,nome_gp,socket_primario_clien
         server_teste_pareamento_direto = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         teste = False
         try:
-            # Tenta criar um socket na porta especificada
-            server_teste_pareamento_direto.bind((str(ipv4_address), int(nmr_porta)))
-            server_teste_pareamento_direto.listen(int(qtd_pessoas))
+            server_teste_pareamento_direto.bind((str(ipv4_address), int(nmr_porta))) #Será tentado abrir o serve no ip e porta dito pelo cliente, em caso de erro, abaixo será enviado a mensagem dizendo que foi recusado
+            server_teste_pareamento_direto.listen(int(qtd_max_pessoas))
             teste = True
             server_teste_pareamento_direto.close()
         except (ConnectionRefusedError, TimeoutError, OSError):
@@ -58,22 +55,22 @@ def Create_chat(nmr_porta,senha,qtd_pessoas,pedido,nome_gp,socket_primario_clien
         if teste == True: #Caso o teste tenha tido sucesso, será criado o socket de fato que irá fazer a abertura do server
             global server_pareamento_direto
             server_pareamento_direto = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            server_pareamento_direto.bind((str(ipv4_address), int(nmr_porta)))
-            server_pareamento_direto.listen(int(qtd_pessoas))
+            server_pareamento_direto.bind((str(ipv4_address), int(nmr_porta))) #Ao ver que foi possivel abrir neste ip / porta, agora será aberto de fato em um socket definitivo
+            server_pareamento_direto.listen(int(qtd_max_pessoas))
 
-            portas[nmr_porta] = [senha, qtd_pessoas,nome_gp] #ex: portas[8888] >> {123,'20',grupo da familia}
+            portas[nmr_porta] = [senha, qtd_max_pessoas,nome_gp, [] ] #ex: portas[8888] >> {123,'20',grupo da familia, [] }  #Esse [] é para listar os sockets dos clientes conectados nessa porta
             print(f'Servidor aguardando conexões, em: {nmr_porta}')
 
-    if (nmr_porta in portas) and len(client_socket_chat) <int(portas[nmr_porta][1]) : #Para: 'Trancar' o grupo chat, entre a quantidade de pessoas especificada
+    if (nmr_porta in portas) and len(portas[nmr_porta][3]) <int(portas[nmr_porta][1]) : #Para: 'Trancar' o grupo chat, entre a quantidade de pessoas especificada
         if portas[nmr_porta][0] == senha: #exemplo:  {'8888' : '123'}, if '123' == senha 
-            autorizado = f'Autorizado+{portas[nmr_porta][2]}'
+            autorizado = f'Autorizado+{portas[nmr_porta][2]}' #É enviado que foi autorizado, e o nome do grupo do chat em questão
             socket_primario_client.send(autorizado.encode())
-            client_socket_create_chat, addr = server_pareamento_direto.accept()
+            client_socket_no_chat, addr = server_pareamento_direto.accept()
             print(f'Conexão recebida de ip:{addr[0]} porta do cliente:{addr[1]} no chat de porta: {nmr_porta}')
-            client_socket_chat.append(client_socket_create_chat)       
+            portas[nmr_porta][3].append(client_socket_no_chat)       
             #Abaixo será criada uma thread para cada cliente que estará no chat, fazendo que esse cliente receba as mensagens por checagem própria
             #Checar depois se é isso mesmo
-            client_thread_chat = threading.Thread(target=comunicacao, args=(client_socket_create_chat,))
+            client_thread_chat = threading.Thread(target=comunicacao, args=(client_socket_no_chat,))
             client_thread_chat.start()
         else:
             socket_primario_client.send('Recusado, senha está errada!'.encode())
@@ -91,7 +88,7 @@ def escuta_solicitacao_primaria(client_socket,id_cliente):
             if not mensagem:
                 break
             msg = mensagem.split('+') 
-            Create_chat(msg[0],msg[1],msg[2],msg[3],msg[4],client_socket) # nmr_porta,senha,qtd_pessoas,nome_gp, e o client_socket
+            Create_chat(msg[0],msg[1],msg[2],msg[3],msg[4],client_socket) # nmr_porta,senha,qtd_max_pessoas,nome_gp, e o client_socket
         except ConnectionError:
             break
     

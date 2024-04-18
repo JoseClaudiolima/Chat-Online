@@ -314,7 +314,7 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
     if validação_porta == True and validação_senha == True:
         if qtd_pessoas != False:
             qtd_pessoas, validação_qtd_p = Tratar_input(qtd_pessoas,'quantidade de pessoas',window_antiga,True,False,False,2,False,1)
-            nome_gp, validação_nome_gp = Tratar_input(nome_gp,'nome do grupo',window_antiga,True,True,True,12,1,False)
+            nome_gp, validação_nome_gp = Tratar_input(nome_gp,'nome do grupo',window_antiga,True,True,True,30,1,False)
         else:
             validação_qtd_p = True
             validação_nome_gp = True
