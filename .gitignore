@@ -148,3 +148,5 @@ explicacao.txt
 index.py
 server_teste.py
 __pycache__
+teste/
+arquivos_crip_servidor/*

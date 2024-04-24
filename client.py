@@ -2,12 +2,14 @@ from Lib import CriptografiaRSA as rsa
 from Lib import Emoticons
 
 import tkinter as tk
+from tkinter import filedialog
 import ttkbootstrap as ttk
 import socket
 import threading
 import math
 import time
 import emoji
+import os
 
 #Passo 1: Coloque o nome
 #Passo 2: Coloque o ipv4 do server, ja copia automaticamente no server.py
@@ -145,6 +147,26 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
             cliente_socket.send(cifra.encode()) #a mensagem é enviada nessa linha ao servidor, usando sockets
             message_input.delete(0, tk.END)
         widget_emoji(chat_display,'Desapareça')
+
+    def Enviar_Arquivo():
+        filepath = filedialog.askopenfilename()
+        filename = os.path.basename(filepath)
+        tamanho_arquivo = os.path.getsize(filepath)
+        print(filepath,filename,tamanho_arquivo)
+
+        cliente_socket.send( (f'Tamanho do arquivo:{tamanho_arquivo}').encode() )
+        time.sleep(1) #Só para garantir que o server está aguardando o envio
+
+        with open(filepath,'rb') as file: #irá abrir o arquivo, em leitura de bytes
+            while True:
+                data = file.read(1024)
+                #print(data)
+                if not data:
+                    break
+        
+                cliente_socket.sendall(data)    
+            print('Arquivo enviado com sucesso!')
+
 
     def Receber_mensagens():
         rodar = True
@@ -398,6 +420,8 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
             chat_display.tag_configure('right', justify='right')
             chat_display.tag_configure('left', justify='left')
             chat_display.tag_configure('emoticon_tag', font=('Arial',20))
+            chat_display.tag_configure('arquivo', foreground='red', font=('bold'))  # Definindo a cor do texto (do arquivo) de vermelho
+
 
             scrollbar = ttk.Scrollbar(chat_box, command=chat_display.yview)
             scrollbar.pack(side='right', padx=10, fill='y')  # fill='y' para preencher a altura disponível
@@ -412,7 +436,9 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
             emoji_label.pack(side='left')
             Abrir_emojis = ['Não aberto']
             emoji_label.bind("<Button-1>", lambda event: widget_emoji(chat_window,'Abrir', event))
-            
+
+            transf_arq = ttk.Button(input, text="Transf. Arquivo", command=Enviar_Arquivo)
+            transf_arq.pack(side='left',padx=7)
 
             send_button = ttk.Button(input, text="Enviar", command=Enviar_mensagem)
             send_button.pack(side='left',padx=8)
