@@ -24,7 +24,7 @@ def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,socket_primario_c
                         del portas[nmr_porta]
                     break
 
-                if 'Tamanho do arquivo:' in mensagem_do_chat:
+                elif 'Tamanho do arquivo:' in mensagem_do_chat:
                     mensagem_do_chat = mensagem_do_chat.split(':')
                     tamanho_arquivo = int(mensagem_do_chat[1])
                     
@@ -88,7 +88,6 @@ def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,socket_primario_c
             pasta_arquivos_da_porta = os.path.join(SAVE_FOLDER, str(nmr_porta)) 
             if not os.path.exists(pasta_arquivos_da_porta):
                 os.makedirs(pasta_arquivos_da_porta)   
-            print(pasta_arquivos_da_porta)
             print(f'Servidor aguardando conexões, em: {nmr_porta}')
 
     if (nmr_porta in portas) and len(portas[nmr_porta][3]) <int(portas[nmr_porta][1]) : #Para: 'Trancar' o grupo chat, entre a quantidade de pessoas especificada

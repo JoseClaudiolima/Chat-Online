@@ -136,14 +136,17 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
         time.sleep(1) #Coloquei isso para resolver um bug em que era enviado a msg ao server que fechou a conexão, porém a msg nem chegava ao server, e a linha cliente_socket.close(), já fechava o socket antes da msg chegar no server 
         cliente_socket.close() #Cliente se desconecta de fato
 
-    def Enviar_mensagem(msg=None):
+    def Enviar_mensagem(msg=None,admin = None):
         if msg == "Protocolo_close": #Isso é para avisar o servidor que o cliente fechou a janela e se desconectará
             cliente_socket.send(msg.encode())
             return
-        mensagem = f"{message_input.get()} {format(math.pi, '.10f')} {name}" #Isso é para separar as diferentes informações passadas em uma só mensagem, os 10 numeros do pi foi escolhido como meio de separação de mensagens, uma vez que dificilmente alguem escreveria isso no chat
+        mensagem = f"{msg} {format(math.pi, '.10f')} {name}" #Isso é para separar as diferentes informações passadas em uma só mensagem, os 10 numeros do pi foi escolhido como meio de separação de mensagens, uma vez que dificilmente alguem escreveria isso no chat
         if mensagem: #Abaixo fará a cifragem da mensagem, e depois o envio ao servidor
             mensagem = emoji.demojize(mensagem) 
-            cifra = rsa.cifrar(mensagem,28837,40301) #Está com chave já selecionada, podemos aleatorizar depois
+            if admin != None:
+                cifra = f'{admin}{rsa.cifrar(mensagem,28837,40301)}'
+            else:
+                cifra = rsa.cifrar(mensagem,28837,40301) #Está com chave já selecionada, podemos aleatorizar depois
             cliente_socket.send(cifra.encode()) #a mensagem é enviada nessa linha ao servidor, usando sockets
             message_input.delete(0, tk.END)
         widget_emoji(chat_display,'Desapareça')
@@ -152,7 +155,6 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
         filepath = filedialog.askopenfilename()
         filename = os.path.basename(filepath)
         tamanho_arquivo = os.path.getsize(filepath)
-        print(filepath,filename,tamanho_arquivo)
 
         cliente_socket.send( (f'Tamanho do arquivo:{tamanho_arquivo}').encode() )
         time.sleep(1) #Só para garantir que o server está aguardando o envio
@@ -160,19 +162,46 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
         with open(filepath,'rb') as file: #irá abrir o arquivo, em leitura de bytes
             while True:
                 data = file.read(1024)
-                #print(data)
                 if not data:
                     break
-        
                 cliente_socket.sendall(data)    
-            print('Arquivo enviado com sucesso!')
+        Enviar_mensagem(f'{filename}',f'arquivo {tamanho_arquivo} ')
 
+    def Bind_tag_arquivo(tag,tamanho_arquivo):
+        def mostrar_info_arquivo(event,info):
+            global popup_window
+            popup_window = tk.Toplevel(chat_box)
+            popup_window.wm_overrideredirect(True)  # Remove a decoração da janela
+            popup_window.wm_geometry(f"+{event.x_root+10}+{event.y_root+10}")  # Posiciona a janela próxima ao cursor
+            if info <1000:
+                label_info = tk.Label(popup_window, text=f'{info:.0f}KB', font=("Arial", 10))
+            else:
+                info = info/1000
+                label_info = tk.Label(popup_window, text=f'{info:.3f}MB', font=("Arial", 10))
+            label_info.pack()
+        
+        def esconder_info_arquivo(event):
+            popup_window.destroy()
+        
+        def baixar_arquivo(event,v):
+            print('baixaagora',v)
+
+        chat_display.tag_bind(tag,'<Button-1>', lambda event: baixar_arquivo(event,tag))
+        chat_display.tag_bind(tag, '<Enter>', lambda event: mostrar_info_arquivo(event, (tamanho_arquivo)))
+        chat_display.tag_bind(tag, '<Leave>', esconder_info_arquivo)
 
     def Receber_mensagens():
         rodar = True
+        qtd_arquivos = 0
         while rodar:
             try:
                 mensagem = cliente_socket.recv(1024).decode() #Decodificará a mensagem por padrão do servidor
+                is_arquivo = False
+                if 'arquivo' in mensagem:
+                    mensagem = mensagem.split(' ')
+                    tamanho_arquivo = int(mensagem[1])/1024
+                    mensagem = mensagem[2]
+                    is_arquivo = True
                 msg_decifrada = rsa.decifrar(mensagem,40301,12973) #Está com chave já selecionada, podemos aleatorizar depois
                 msg_decifrada = msg_decifrada.split(f" {format(math.pi, '.10f')} ")
                 if msg_decifrada[0]: 
@@ -186,7 +215,12 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
                                 if emoji.is_emoji(i):
                                     chat_display.insert(tk.END, i, 'right emoticon_tag')
                                 else:
-                                    chat_display.insert(tk.END, i, 'right')
+                                    if is_arquivo == True: #Se for o texto do arquivo, terá um estilo diferente (para permitir mudança de cor e de funcionalidades como:)
+                                        chat_display.insert(tk.END, i, f'right arquivo {qtd_arquivos}')
+                                        qtd_arquivos += 1
+                                        Bind_tag_arquivo(qtd_arquivos,tamanho_arquivo)
+                                    else:
+                                        chat_display.insert(tk.END, i, 'right')
                             chat_display.insert(tk.END, '\n', 'right')
                         else:
                             primeira_iteracao = True
@@ -197,7 +231,10 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
                                 if emoji.is_emoji(i):
                                     chat_display.insert(tk.END, i, 'left emoticon_tag')
                                 else:
-                                    chat_display.insert(tk.END, i, 'left')
+                                    if is_arquivo == True:
+                                        chat_display.insert(tk.END, i, 'left arquivo')
+                                    else:
+                                        chat_display.insert(tk.END, i, 'left')
                             chat_display.insert(tk.END, '\n', 'left')
                         Scroll_to_bottom()
                         chat_display.configure(state='disabled')
@@ -440,7 +477,7 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
             transf_arq = ttk.Button(input, text="Transf. Arquivo", command=Enviar_Arquivo)
             transf_arq.pack(side='left',padx=7)
 
-            send_button = ttk.Button(input, text="Enviar", command=Enviar_mensagem)
+            send_button = ttk.Button(input, text="Enviar", command=lambda: Enviar_mensagem(message_input.get()))
             send_button.pack(side='left',padx=8)
             message_input.bind("<Return>", lambda event: send_button.invoke())
 
