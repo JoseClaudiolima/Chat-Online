@@ -22,6 +22,12 @@ def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,socket_primario_c
                     portas[nmr_porta][3].remove(socket_do_client_chat)
                     socket_do_client_chat.close()
                     if len(portas[nmr_porta][3]) == 0: #Se o client for o ultimo do chat, o server fecha o chat, e libera a porta para ser criado por outros
+                        for nome_arquivo in os.listdir(portas[nmr_porta][4]): # loop percorre todos os arquivos da pasta, para deleta-la
+                            caminho_arquivo = os.path.join(portas[nmr_porta][4], nome_arquivo)
+                            # Exclua o arquivo
+                            os.remove(caminho_arquivo)
+                        # Deleta a pasta vazia
+                        os.rmdir(portas[nmr_porta][4])
                         del portas[nmr_porta]
                     break
 

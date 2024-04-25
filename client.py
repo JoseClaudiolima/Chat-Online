@@ -193,7 +193,6 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
         chat_display.tag_bind(tag, '<Enter>', lambda event: mostrar_info_arquivo(event, (tamanho_arquivo)))
         chat_display.tag_bind(tag, '<Leave>', esconder_info_arquivo)
 
-
     def Receber_mensagens():
         def Receber_arquivo(mensagem):
             mensagem = mensagem.split(':')
@@ -205,7 +204,7 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
             if not os.path.exists(pasta_arquivos_porta):
                 os.makedirs(pasta_arquivos_porta)
                 
-            path_arquivo = os.path.join(pasta_arquivos_porta,nome_arquivos[tag]) #mensagem[2]
+            path_arquivo = os.path.join(pasta_arquivos_porta, nome_arquivos[tag]) 
             tamanho_arquivo = int(mensagem[1])
 
             with open (path_arquivo,'wb') as arq:
@@ -405,7 +404,7 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
             entry.insert(0, new_text)  # Define o novo texto no Entry  
         
 
-    nmr_porta, validação_porta = Tratar_input(nmr_porta,'porta',window_antiga,True,False,False,5,4,4000)
+    nmr_porta, validação_porta = Tratar_input(nmr_porta,'porta',window_antiga,True,False,False,4,4,4000)
     if validação_porta == True:
         senha, validação_senha = Tratar_input(senha,'senha',window_antiga,True,True,True,8,3,False)
     if validação_porta == True and validação_senha == True:
