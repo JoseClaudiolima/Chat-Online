@@ -84,10 +84,12 @@ def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,socket_primario_c
             server_pareamento_direto.bind((str(ipv4_address), int(nmr_porta))) #Ao ver que foi possivel abrir neste ip / porta, agora será aberto de fato em um socket definitivo
             server_pareamento_direto.listen(int(qtd_max_pessoas))
 
-            portas[nmr_porta] = [senha, qtd_max_pessoas,nome_gp, [] ] #ex: portas[8888] >> {123,'20',grupo da familia, [] }  #Esse [] é para listar os sockets dos clientes conectados nessa porta
+            #portas[nmr_porta] = [senha, qtd_max_pessoas,nome_gp, [] ] #ex: portas[8888] >> {123,'20',grupo da familia, [] }  #Esse [] é para listar os sockets dos clientes conectados nessa porta
             pasta_arquivos_da_porta = os.path.join(SAVE_FOLDER, str(nmr_porta)) 
             if not os.path.exists(pasta_arquivos_da_porta):
                 os.makedirs(pasta_arquivos_da_porta)   
+            portas[nmr_porta] = [senha, qtd_max_pessoas,nome_gp, [], pasta_arquivos_da_porta] #ex: portas[8888] >> {123,'20',grupo da familia, [] }  #Esse [] é para listar os sockets dos clientes conectados nessa porta
+
             print(f'Servidor aguardando conexões, em: {nmr_porta}')
 
     if (nmr_porta in portas) and len(portas[nmr_porta][3]) <int(portas[nmr_porta][1]) : #Para: 'Trancar' o grupo chat, entre a quantidade de pessoas especificada
@@ -99,7 +101,7 @@ def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,socket_primario_c
             portas[nmr_porta][3].append(client_socket_no_chat)       
             #Abaixo será criada uma thread para cada cliente que estará no chat, fazendo que esse cliente receba as mensagens por checagem própria
             #Checar depois se é isso mesmo
-            client_thread_chat = threading.Thread(target=comunicacao, args=(client_socket_no_chat,pasta_arquivos_da_porta,))
+            client_thread_chat = threading.Thread(target=comunicacao, args=(client_socket_no_chat,portas[nmr_porta][4],))
             client_thread_chat.start()
         else:
             socket_primario_client.send('Recusado, senha está errada!'.encode())

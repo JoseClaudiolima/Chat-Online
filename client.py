@@ -153,6 +153,8 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
 
     def Enviar_Arquivo():
         filepath = filedialog.askopenfilename()
+        if not filepath:
+            return
         filename = os.path.basename(filepath)
         tamanho_arquivo = os.path.getsize(filepath)
 
@@ -183,9 +185,10 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
         def esconder_info_arquivo(event):
             popup_window.destroy()
         
-        def baixar_arquivo(event,v):
-            print('baixaagora',v)
+        def baixar_arquivo(event,tag):
+            print('baixaagora',tag)
 
+        print(tag,'aqui')
         chat_display.tag_bind(tag,'<Button-1>', lambda event: baixar_arquivo(event,tag))
         chat_display.tag_bind(tag, '<Enter>', lambda event: mostrar_info_arquivo(event, (tamanho_arquivo)))
         chat_display.tag_bind(tag, '<Leave>', esconder_info_arquivo)
@@ -217,10 +220,11 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
                                 else:
                                     if is_arquivo == True: #Se for o texto do arquivo, terá um estilo diferente (para permitir mudança de cor e de funcionalidades como:)
                                         chat_display.insert(tk.END, i, f'right arquivo {qtd_arquivos}')
-                                        qtd_arquivos += 1
-                                        Bind_tag_arquivo(qtd_arquivos,tamanho_arquivo)
                                     else:
                                         chat_display.insert(tk.END, i, 'right')
+                            if is_arquivo == True:
+                                Bind_tag_arquivo(qtd_arquivos,tamanho_arquivo)
+                                qtd_arquivos += 1
                             chat_display.insert(tk.END, '\n', 'right')
                         else:
                             primeira_iteracao = True
@@ -232,9 +236,12 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
                                     chat_display.insert(tk.END, i, 'left emoticon_tag')
                                 else:
                                     if is_arquivo == True:
-                                        chat_display.insert(tk.END, i, 'left arquivo')
+                                        chat_display.insert(tk.END, i, f'left arquivo {qtd_arquivos}')
                                     else:
                                         chat_display.insert(tk.END, i, 'left')
+                            if is_arquivo == True:
+                                Bind_tag_arquivo(qtd_arquivos,tamanho_arquivo)
+                                qtd_arquivos += 1
                             chat_display.insert(tk.END, '\n', 'left')
                         Scroll_to_bottom()
                         chat_display.configure(state='disabled')
