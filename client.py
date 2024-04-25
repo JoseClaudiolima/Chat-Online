@@ -126,7 +126,7 @@ def Tratar_input(string,id,window_antiga,pode_numero,pode_char_esp,pode_char_alf
         return string, False
     return string, True
 
-
+nome_arquivos = {}
 def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
     def Fechar_janela_chat():
         chat_window.destroy() #Isso aqui destroy a chat_window apenas na primeira thread
@@ -167,7 +167,8 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
                 if not data:
                     break
                 cliente_socket.sendall(data)    
-        Enviar_mensagem(f'{filename}',f'arquivo {tamanho_arquivo} ')
+        time.sleep(1)
+        Enviar_mensagem(f'{filename}',f'arquivo {tamanho_arquivo} nmr_arquivo ')
 
     def Bind_tag_arquivo(tag,tamanho_arquivo):
         def mostrar_info_arquivo(event,info):
@@ -186,25 +187,52 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
             popup_window.destroy()
         
         def baixar_arquivo(event,tag):
-            print('baixaagora',tag)
+            cliente_socket.send(f'Baixar:{tag}'.encode())
 
-        print(tag,'aqui')
         chat_display.tag_bind(tag,'<Button-1>', lambda event: baixar_arquivo(event,tag))
         chat_display.tag_bind(tag, '<Enter>', lambda event: mostrar_info_arquivo(event, (tamanho_arquivo)))
         chat_display.tag_bind(tag, '<Leave>', esconder_info_arquivo)
 
+
     def Receber_mensagens():
+        def Receber_arquivo(mensagem):
+            mensagem = mensagem.split(':')
+            SAVE_FOLDER = os.path.dirname(os.path.abspath(__file__)) #Pega o path do diretorio atual
+            pasta_arquivos = os.path.join(SAVE_FOLDER, f'arquivos_do_chat_porta').replace('\\\\','\\') 
+            if not os.path.exists(pasta_arquivos):
+                os.makedirs(pasta_arquivos)
+            pasta_arquivos_porta = os.path.join(pasta_arquivos,str(nmr_porta))
+            if not os.path.exists(pasta_arquivos_porta):
+                os.makedirs(pasta_arquivos_porta)
+                
+            path_arquivo = os.path.join(pasta_arquivos_porta,nome_arquivos[tag]) #mensagem[2]
+            tamanho_arquivo = int(mensagem[1])
+
+            with open (path_arquivo,'wb') as arq:
+                while tamanho_arquivo > 0:
+                    dados = cliente_socket.recv(1024)
+                    if not dados:
+                        break
+                    arq.write(dados)
+                    tamanho_arquivo -= len(dados)
+            print('Download do cliente com sucesso!')
+            Receber_mensagens()
+
         rodar = True
-        qtd_arquivos = 0
         while rodar:
             try:
                 mensagem = cliente_socket.recv(1024).decode() #Decodificará a mensagem por padrão do servidor
+                if 'Baixar:' in mensagem:
+                    Receber_arquivo(mensagem)
+                    continue
+
                 is_arquivo = False
                 if 'arquivo' in mensagem:
+                    is_arquivo = True
                     mensagem = mensagem.split(' ')
                     tamanho_arquivo = int(mensagem[1])/1024
-                    mensagem = mensagem[2]
-                    is_arquivo = True
+                    tag = mensagem[2]
+                    mensagem = mensagem[3]
                 msg_decifrada = rsa.decifrar(mensagem,40301,12973) #Está com chave já selecionada, podemos aleatorizar depois
                 msg_decifrada = msg_decifrada.split(f" {format(math.pi, '.10f')} ")
                 if msg_decifrada[0]: 
@@ -212,6 +240,7 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
                         nome = msg_decifrada[1]
                         chat_display.configure(state='normal')
                         msg_texto = emoji.emojize(msg_decifrada[0])
+                        nome_arquivo = ''
 
                         if nome == name: #Se o nome da pessoa for o do próprio cliente, faz configuração diferencial na amostra da mensagem no chat
                             for i in msg_texto:#O looping é feito para analisar se há emoji na mensagem colocada, pois caso afirmativo é colocado um estilo de font diferenciado ao emoji
@@ -219,12 +248,13 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
                                     chat_display.insert(tk.END, i, 'right emoticon_tag')
                                 else:
                                     if is_arquivo == True: #Se for o texto do arquivo, terá um estilo diferente (para permitir mudança de cor e de funcionalidades como:)
-                                        chat_display.insert(tk.END, i, f'right arquivo {qtd_arquivos}')
+                                        chat_display.insert(tk.END, i, f'right arquivo {tag}')
+                                        nome_arquivo +=i
                                     else:
                                         chat_display.insert(tk.END, i, 'right')
                             if is_arquivo == True:
-                                Bind_tag_arquivo(qtd_arquivos,tamanho_arquivo)
-                                qtd_arquivos += 1
+                                Bind_tag_arquivo(tag,tamanho_arquivo)
+                                nome_arquivos[tag] = nome_arquivo
                             chat_display.insert(tk.END, '\n', 'right')
                         else:
                             primeira_iteracao = True
@@ -236,12 +266,13 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
                                     chat_display.insert(tk.END, i, 'left emoticon_tag')
                                 else:
                                     if is_arquivo == True:
-                                        chat_display.insert(tk.END, i, f'left arquivo {qtd_arquivos}')
+                                        chat_display.insert(tk.END, i, f'left arquivo {tag}')
+                                        nome_arquivo +=i
                                     else:
                                         chat_display.insert(tk.END, i, 'left')
                             if is_arquivo == True:
-                                Bind_tag_arquivo(qtd_arquivos,tamanho_arquivo)
-                                qtd_arquivos += 1
+                                Bind_tag_arquivo(tag,tamanho_arquivo)
+                                nome_arquivos[tag] = nome_arquivo
                             chat_display.insert(tk.END, '\n', 'left')
                         Scroll_to_bottom()
                         chat_display.configure(state='disabled')

@@ -2,6 +2,7 @@ import socket
 import threading
 import pyperclip
 import os
+import time
 
 usuarios_conexão_basica = [] #Lista dos usuários que fizeram a primeira conexão com o server
 portas = {} #Dicionario das portas abertas com sucesos, contendo : portas['nmr_porta'] : {senha, qtd_max_pessoas, nome_gp, lista_dos_cliente_conectados_ao_chat[] }
@@ -40,6 +41,26 @@ def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,socket_primario_c
                                 break
                             arquivo.write(dados)
                             tamanho_arquivo -= len(dados)
+                    portas[nmr_porta][5].append(qtd_arquivos_na_pasta + 1)
+                    continue
+                
+                elif 'nmr_arquivo' in mensagem_do_chat:
+                    mensagem_do_chat = mensagem_do_chat.replace('nmr_arquivo',str(len(portas[nmr_porta][5])))
+                
+                elif 'Baixar:' in mensagem_do_chat:
+                    mensagem_do_chat = mensagem_do_chat.split(':')
+                    time.sleep(1)
+                    file_path = os.path.join(path_pasta_de_arquivos_da_porta,str(mensagem_do_chat[1])).replace('\\\\','\\')
+                    tamanho_arquivo = os.path.getsize(file_path)
+                    socket_do_client_chat.send(f'Baixar:{tamanho_arquivo}:{mensagem_do_chat[1]}'.encode())
+                    time.sleep(1)
+                    with open(file_path,'rb') as file:
+                        while True:
+                            data = file.read(1024)
+                            if not data:
+                                break
+                            socket_do_client_chat.sendall(data)
+                    print('server enviou arquivo com sucesso!')
                     continue
                         
                 for c in portas[nmr_porta][3]: #Nesse looping: Para cada usuario do grupo, será enviado a mensagem em questão
@@ -88,7 +109,9 @@ def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,socket_primario_c
             pasta_arquivos_da_porta = os.path.join(SAVE_FOLDER, str(nmr_porta)) 
             if not os.path.exists(pasta_arquivos_da_porta):
                 os.makedirs(pasta_arquivos_da_porta)   
-            portas[nmr_porta] = [senha, qtd_max_pessoas,nome_gp, [], pasta_arquivos_da_porta] #ex: portas[8888] >> {123,'20',grupo da familia, [] }  #Esse [] é para listar os sockets dos clientes conectados nessa porta
+            portas[nmr_porta] = [senha, qtd_max_pessoas,nome_gp, [], pasta_arquivos_da_porta, []]
+            #ex: portas[8888] >> {123,'20',grupo da familia, [] } o primeiro [] é para listar os sockets dos clientes conectados nessa porta
+            # o segundo [] é para listar os arquivos na porta
 
             print(f'Servidor aguardando conexões, em: {nmr_porta}')
 

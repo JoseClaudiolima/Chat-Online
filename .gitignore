@@ -148,5 +148,7 @@ explicacao.txt
 index.py
 server_teste.py
 __pycache__
+
 teste/
-arquivos_crip_servidor/*
+arquivos_crip_servidor/
+arquivos_do_chat_porta/
