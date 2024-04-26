@@ -84,22 +84,22 @@ def Tratar_input(string,id,window_antiga,pode_numero,pode_char_esp,pode_char_alf
     if string == '':
         validação = False
         validação_vazia = 'Erro'
-    if (pode_numero == False) and (any(char.isdigit() for char in string)): #Na sequencia de ifs abaixo, é comparado se a string está conforme necessário
+    elif (pode_numero == False) and (any(char.isdigit() for char in string)): #Na sequencia de ifs abaixo, é comparado se a string está conforme necessário
         validação = False
         validação_numero = 'Erro'
-    if (pode_char_esp == False) and (any(not char.isalnum() and not char.isspace() and not char == '.' for char in string)):
+    elif (pode_char_esp == False) and (any(not char.isalnum() and not char.isspace() and not char == '.' for char in string)):
         validação = False
         validação_char_esp = 'Erro'
-    if (pode_char_alfa == False) and (any(char.isalpha() for char in string)):    
+    elif (pode_char_alfa == False) and (any(char.isalpha() for char in string)):    
         validação = False
         validação_char_alfa = 'Erro'
-    if (limite_max_char != False) and (limite_max_char < len(string)):
+    elif (limite_max_char != False) and (limite_max_char < len(string)):
         validação = False
         validação_max_limite = 'Erro'
-    if (limite_min_char != False) and (limite_min_char > len(string)):
+    elif (limite_min_char != False) and (limite_min_char > len(string)):
         validação = False
         validação_min_limite = 'Erro'
-    if (numero_minimo != False) and ((string =='')  or (int(string) <= numero_minimo) ):
+    elif (numero_minimo != False) and ((string =='')  or (int(string) <= numero_minimo) ):
         validação = False
         validacao_numero_minimo = 'Erro'
     if validação == False: #Abaixo será criado uma janela personalizada baseada no erro especifico do usuário ao colocar o input não compativel
