@@ -128,17 +128,21 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
     def Fechar_janela_chat():
         chat_window.destroy() #Isso aqui destroy a chat_window apenas na primeira thread
         msg_close = f"Protocolo_close,{name}"
-        Enviar_mensagem(msg_close) #Avisa ao server, que o client desconectou
+        Enviar_mensagem(msg_close,True) #Avisa ao server, que o client desconectou
         Thread_receber.join()
         time.sleep(1) #Coloquei isso para resolver um bug em que era enviado a msg ao server que fechou a conexão, porém a msg nem chegava ao server, e a linha cliente_socket.close(), já fechava o socket antes da msg chegar no server 
         cliente_socket.close() #Cliente se desconecta de fato
-        connection.close()
+        connection.close()#Fecha a primeira conexão com o servidor
 
 
     def Enviar_mensagem(msg=None,admin = None):
-        if "Protocolo_close" in msg: #Isso é para avisar o servidor que o cliente fechou a janela e se desconectará
+        if ("Protocolo_close" in msg) and (admin ==True): #Isso é para avisar o servidor que o cliente fechou a janela e se desconectará, sem criptografia
             cliente_socket.send(msg.encode())
             return
+        elif (admin == True) and ("Cliente Conectou:" in msg): #Isso envia ao server avisando que o cliente se conectou, sem criptografia
+            cliente_socket.send(msg.encode())
+            return
+        
         mensagem = f"{msg} {format(math.pi, '.10f')} {name}" #Isso é para separar as diferentes informações passadas em uma só mensagem, os 10 numeros do pi foi escolhido como meio de separação de mensagens, uma vez que dificilmente alguem escreveria isso no chat
         if mensagem: #Abaixo fará a cifragem da mensagem, e depois o envio ao servidor
             mensagem = emoji.demojize(mensagem) 
@@ -220,21 +224,25 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
         while rodar:
             try:
                 mensagem = cliente_socket.recv(1024).decode() #Decodificará a mensagem por padrão do servidor
-                if 'Baixar:' in mensagem:
+                if 'Baixar:' in mensagem: #Se cliente clientou na representação do arquivo no chat, ele será redirecionado na função que fará o download do arquivo
                     Receber_arquivo(mensagem)
                     continue
 
                 is_arquivo = False
-                if 'arquivo' in mensagem:
+                if 'arquivo' in mensagem: # Se alguem enviar um arquivo no chat, terá estilo diferente e contagem de byts caso o usuario deixe o mouse sobre
                     is_arquivo = True
                     mensagem = mensagem.split(' ')
                     tamanho_arquivo = int(mensagem[1])/1024
                     tag = mensagem[2]
                     mensagem = mensagem[3]
-                elif 'Cliente saiu do chat' in mensagem: # Se receber do servidor que um cliente saiu, colocara no chat o nome da pessoa que saiu
-                    mensagem = mensagem.split(',')
+                elif 'saiu do chat' in mensagem: # Se receber do servidor uma msg de que um cliente saiu, colocara no chat o nome da pessoa que saiu
                     chat_display.configure(state='normal')
-                    chat_display.insert(tk.END, f'{mensagem[1]}, saiu do chat.\n', 'left desconexão')
+                    chat_display.insert(tk.END, f'{mensagem}\n', 'left desconexão')
+                    chat_display.configure(state='disabled')
+                    continue
+                elif 'entrou no chat.' in mensagem: # Ao receber msg do server que alguem entrou no chat, colocará com estilo especial no chat
+                    chat_display.configure(state='normal')
+                    chat_display.insert(tk.END, f'{mensagem}\n', 'left entrada')
                     chat_display.configure(state='disabled')
                     continue
                 msg_decifrada = rsa.decifrar(mensagem,40301,12973) #Está com chave já selecionada, podemos aleatorizar depois
@@ -495,8 +503,9 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
             chat_display.tag_configure('right', justify='right')
             chat_display.tag_configure('left', justify='left')
             chat_display.tag_configure('emoticon_tag', font=('Arial',20))
-            chat_display.tag_configure('arquivo', foreground='red', font=('bold'))  # Definindo a cor do texto (do arquivo) de vermelho
-            chat_display.tag_configure('desconexão', foreground='green', font=('bold')) # Cor de aviso de desconexão de cliente, em verde
+            chat_display.tag_configure('arquivo', foreground='blue', font=('bold'))  # Definindo a cor do texto (do arquivo)
+            chat_display.tag_configure('desconexão', foreground='red', font=('bold'))# Cor de aviso de desconexão de cliente
+            chat_display.tag_configure('entrada', foreground='green', font=('bold')) # Cor de aviso de conexão de cliente
 
 
             scrollbar = ttk.Scrollbar(chat_box, command=chat_display.yview)
@@ -530,6 +539,8 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
 
             Thread_receber = threading.Thread(target=Receber_mensagens) #É iniciado uma thread para rodar separadamente no aguardo de mensagens enviadas pelo servidor
             Thread_receber.start()
+            time.sleep(0.5) #Para garantir que a thread está recebendo mensagens
+            Enviar_mensagem(f'Cliente Conectou:{name}',True)
             chat_window.protocol("WM_DELETE_WINDOW", lambda: Fechar_janela_chat())
         else:
             cliente_socket.close()

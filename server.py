@@ -38,7 +38,7 @@ def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,nome_cliente,sock
                         mensagem_do_chat = mensagem_do_chat.split(',')
                         for c in portas[nmr_porta][3]:
                             try:
-                                c.send(f'Cliente saiu do chat,{mensagem_do_chat[1]}'.encode())
+                                c.send(f'{mensagem_do_chat[1]}, saiu do chat'.encode())
                             except ConnectionError:
                                 continue
                     break
@@ -59,8 +59,6 @@ def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,nome_cliente,sock
                                 break
                             arquivo.write(dados)
                             tamanho_arquivo -= len(dados)
-                            print('antes',dados)
-                            print('dps',str(dados))
                     portas[nmr_porta][5].append(qtd_arquivos_na_pasta + 1)
                     continue
                 
@@ -80,9 +78,12 @@ def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,nome_cliente,sock
                             if not data:
                                 break
                             socket_do_client_chat.sendall(data)
-                    print('server enviou arquivo com sucesso!')
                     continue
                         
+                elif 'Cliente Conectou:' in mensagem_do_chat:
+                    mensagem_do_chat = mensagem_do_chat.split(':')
+                    mensagem_do_chat = f'{mensagem_do_chat[1]}, entrou no chat.'
+                
                 for c in portas[nmr_porta][3]: #Nesse looping: Para cada usuario do grupo, será enviado a mensagem em questão
                     try:
                         c.send(mensagem_do_chat.encode())
@@ -164,7 +165,7 @@ def escuta_solicitacao_primaria(client_socket,id_cliente):
                 break
             elif 'Nome:' in mensagem:
                 mensagem = mensagem.split(':') #mensagem[1] é o nome do cliente
-                if (len(nome_usuarios) == 0) or (mensagem[1] not in nome_usuarios) :
+                if (len(nome_usuarios) == 0) or (mensagem[1].lower() not in [nome.lower() for nome in nome_usuarios]):# Se a lista de nome_usuarios estiver vazia ou se o nome na mensagem não estiver na lista
                     nome_usuarios.append(mensagem[1])
                     client_socket.send('Nome Autorizado!'.encode()) 
                 else: #Nome usuario já está foi escolhido no server
