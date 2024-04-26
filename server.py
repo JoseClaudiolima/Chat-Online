@@ -5,6 +5,7 @@ import os
 import time
 
 usuarios_conexão_basica = [] #Lista dos usuários que fizeram a primeira conexão com o server
+conexão_primaria_interligada_com_conexão_chat = {}
 portas = {} #Dicionario das portas abertas com sucesos, contendo : portas['nmr_porta'] : {senha, qtd_max_pessoas, nome_gp, lista_dos_cliente_conectados_ao_chat[] }
 #Abaixo, é para criar uma pasta em que conterá os arquivos usados no chat
 SAVE_FOLDER = os.path.dirname(os.path.abspath(__file__)) #Pega o path do diretorio atual
@@ -21,6 +22,8 @@ def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,socket_primario_c
                 if "Protocolo_close" in mensagem_do_chat: #Ao cliente avisar que desconectará, o server remove do chat e fecha conexão
                     portas[nmr_porta][3].remove(socket_do_client_chat)
                     socket_do_client_chat.close()
+                    conexão_primaria_interligada_com_conexão_chat[socket_do_client_chat].close()
+
                     if len(portas[nmr_porta][3]) == 0: #Se o client for o ultimo do chat, o server fecha o chat, e libera a porta para ser criado por outros
                         for nome_arquivo in os.listdir(portas[nmr_porta][4]): # loop percorre todos os arquivos da pasta, para deleta-la
                             caminho_arquivo = os.path.join(portas[nmr_porta][4], nome_arquivo)
@@ -136,7 +139,8 @@ def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,socket_primario_c
             socket_primario_client.send(autorizado.encode())
             client_socket_no_chat, addr = server_pareamento_direto.accept()
             print(f'Conexão recebida de ip:{addr[0]} porta do cliente:{addr[1]} no chat de porta: {nmr_porta}')
-            portas[nmr_porta][3].append(client_socket_no_chat)       
+            portas[nmr_porta][3].append(client_socket_no_chat)      
+            conexão_primaria_interligada_com_conexão_chat[client_socket_no_chat] = socket_primario_client
             #Abaixo será criada uma thread para cada cliente que estará no chat, fazendo que esse cliente receba as mensagens por checagem própria
             #Checar depois se é isso mesmo
             client_thread_chat = threading.Thread(target=comunicacao, args=(client_socket_no_chat,portas[nmr_porta][4],))

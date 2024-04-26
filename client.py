@@ -135,6 +135,8 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
         Thread_receber.join()
         time.sleep(1) #Coloquei isso para resolver um bug em que era enviado a msg ao server que fechou a conexão, porém a msg nem chegava ao server, e a linha cliente_socket.close(), já fechava o socket antes da msg chegar no server 
         cliente_socket.close() #Cliente se desconecta de fato
+        connection.close()
+
 
     def Enviar_mensagem(msg=None,admin = None):
         if "Protocolo_close" in msg: #Isso é para avisar o servidor que o cliente fechou a janela e se desconectará
