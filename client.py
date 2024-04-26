@@ -130,14 +130,14 @@ nome_arquivos = {}
 def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
     def Fechar_janela_chat():
         chat_window.destroy() #Isso aqui destroy a chat_window apenas na primeira thread
-        msg_close = "Protocolo_close"
+        msg_close = f"Protocolo_close,{name}"
         Enviar_mensagem(msg_close) #Avisa ao server, que o client desconectou
         Thread_receber.join()
         time.sleep(1) #Coloquei isso para resolver um bug em que era enviado a msg ao server que fechou a conexão, porém a msg nem chegava ao server, e a linha cliente_socket.close(), já fechava o socket antes da msg chegar no server 
         cliente_socket.close() #Cliente se desconecta de fato
 
     def Enviar_mensagem(msg=None,admin = None):
-        if msg == "Protocolo_close": #Isso é para avisar o servidor que o cliente fechou a janela e se desconectará
+        if "Protocolo_close" in msg: #Isso é para avisar o servidor que o cliente fechou a janela e se desconectará
             cliente_socket.send(msg.encode())
             return
         mensagem = f"{msg} {format(math.pi, '.10f')} {name}" #Isso é para separar as diferentes informações passadas em uma só mensagem, os 10 numeros do pi foi escolhido como meio de separação de mensagens, uma vez que dificilmente alguem escreveria isso no chat
@@ -232,6 +232,12 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
                     tamanho_arquivo = int(mensagem[1])/1024
                     tag = mensagem[2]
                     mensagem = mensagem[3]
+                elif 'Cliente saiu do chat' in mensagem: # Se receber do servidor que um cliente saiu, colocara no chat o nome da pessoa que saiu
+                    mensagem = mensagem.split(',')
+                    chat_display.configure(state='normal')
+                    chat_display.insert(tk.END, f'{mensagem[1]}, saiu do chat.', 'left desconexão')
+                    chat_display.configure(state='disabled')
+                    continue
                 msg_decifrada = rsa.decifrar(mensagem,40301,12973) #Está com chave já selecionada, podemos aleatorizar depois
                 msg_decifrada = msg_decifrada.split(f" {format(math.pi, '.10f')} ")
                 if msg_decifrada[0]: 
@@ -418,11 +424,11 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
         qtd_pessoas = int(qtd_pessoas)
 
         if nome_gp != False:
-            #Abaixo mandamos para o server, a mensagem contendo os 5 parametros abaixo, para o chat criar um novo chat lá com base nessas informações
+            #Abaixo mandamos para o server, a mensagem contendo os 5 parametros abaixo, para o chat criar um novo chat com base nessas informações
             message = f'{nmr_porta}+{senha}+{qtd_pessoas}+{pedido}+{nome_gp}'
             connection.send(message.encode())
         else:
-             #Abaixo mandamos para o server, a mensagem contendo os 5 parametros abaixo, para o chat criar um novo chat lá com base nessas informações
+             #Abaixo mandamos para o server, a mensagem contendo os 5 parametros abaixo, para o chat permitir entrada no chat com base nessas informações
             message = f'{nmr_porta}+{senha}+{qtd_pessoas}+{pedido}+{nome_gp}'
             connection.send(message.encode())
 
@@ -490,11 +496,12 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
 
             chat_display = ttk.Text(chat_box,font=("Arial", 12),wrap='word',state='disabled',height=10,width=120)
             chat_display.pack(side = 'left',padx=10)
-            # Configuração de tags para alinhamento
+            # Configuração de tags, para embelezar cada tipo de mensagem no chat
             chat_display.tag_configure('right', justify='right')
             chat_display.tag_configure('left', justify='left')
             chat_display.tag_configure('emoticon_tag', font=('Arial',20))
             chat_display.tag_configure('arquivo', foreground='red', font=('bold'))  # Definindo a cor do texto (do arquivo) de vermelho
+            chat_display.tag_configure('desconexão', foreground='green', font=('bold')) # Cor de aviso de desconexão de cliente, em verde
 
 
             scrollbar = ttk.Scrollbar(chat_box, command=chat_display.yview)

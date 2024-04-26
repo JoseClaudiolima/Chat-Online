@@ -18,7 +18,7 @@ def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,socket_primario_c
         while True: #Esse looping é para: Receber as mensagens pelos clientes e enviar a todos do grupo
             try:
                 mensagem_do_chat = socket_do_client_chat.recv(1024).decode()
-                if mensagem_do_chat == "Protocolo_close": #Ao cliente avisar que desconectará, o server remove do chat e fecha conexão
+                if "Protocolo_close" in mensagem_do_chat: #Ao cliente avisar que desconectará, o server remove do chat e fecha conexão
                     portas[nmr_porta][3].remove(socket_do_client_chat)
                     socket_do_client_chat.close()
                     if len(portas[nmr_porta][3]) == 0: #Se o client for o ultimo do chat, o server fecha o chat, e libera a porta para ser criado por outros
@@ -29,6 +29,13 @@ def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,socket_primario_c
                         # Deleta a pasta vazia
                         os.rmdir(portas[nmr_porta][4])
                         del portas[nmr_porta]
+                    else: #Se tiver ainda clientes na porta, o servidor avisará que tal cliente saiu
+                        mensagem_do_chat = mensagem_do_chat.split(',')
+                        for c in portas[nmr_porta][3]:
+                            try:
+                                c.send(f'Cliente saiu do chat,{mensagem_do_chat[1]}'.encode())
+                            except ConnectionError:
+                                continue
                     break
 
                 elif 'Tamanho do arquivo:' in mensagem_do_chat:
@@ -47,6 +54,8 @@ def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,socket_primario_c
                                 break
                             arquivo.write(dados)
                             tamanho_arquivo -= len(dados)
+                            print('antes',dados)
+                            print('dps',str(dados))
                     portas[nmr_porta][5].append(qtd_arquivos_na_pasta + 1)
                     continue
                 
