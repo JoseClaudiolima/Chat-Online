@@ -65,7 +65,6 @@ def Gerenciar_Janela(comando,config_janela,titulo,window_reserva=None):
     if comando == 'Crie' or comando == 'Delete e crie':
         window = Janela_title_geometry(window,config_janela) 
         return window        
-
     if comando == 'Crie-Toplevel':
         window_Toplevel = ttk.Toplevel()    # Usa Toplevel em vez de Window, pois cria uma janela mais independente, e mais previnida de erros 
         window.withdraw()                   # Usa witdraw em vez de destroy, pois previne erros (isso faz a tela não aparecer para o usuario em vez de destroila)
@@ -73,9 +72,7 @@ def Gerenciar_Janela(comando,config_janela,titulo,window_reserva=None):
         window_Toplevel = Janela_title_geometry(window_Toplevel,config_janela)  
         return window_Toplevel
  
- #A função tem como objetivo que seja passado uma string e ela retorne se os parametros de analise da string estão aceitos, por exemplo, o usuário não pode colocar um caractere alfabetico no input de ipv4 do server ou de porta do servidor
-
-
+#A função tem como objetivo que seja passado uma string e ela retorne se os parametros de analise da string estão aceitos, por exemplo, o usuário não pode colocar um caractere alfabetico no input de ipv4 do server ou de porta do servidor
 def Tratar_input(string,id,window_antiga,pode_numero,pode_char_esp,pode_char_alfa,limite_max_char,limite_min_char,numero_minimo):
     validação = True
     validação_numero = validação_char_esp = validação_char_alfa = validação_max_limite = validação_min_limite = validação_vazia = validacao_numero_minimo  = ''
@@ -237,7 +234,7 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
                 elif 'Cliente saiu do chat' in mensagem: # Se receber do servidor que um cliente saiu, colocara no chat o nome da pessoa que saiu
                     mensagem = mensagem.split(',')
                     chat_display.configure(state='normal')
-                    chat_display.insert(tk.END, f'{mensagem[1]}, saiu do chat.', 'left desconexão')
+                    chat_display.insert(tk.END, f'{mensagem[1]}, saiu do chat.\n', 'left desconexão')
                     chat_display.configure(state='disabled')
                     continue
                 msg_decifrada = rsa.decifrar(mensagem,40301,12973) #Está com chave já selecionada, podemos aleatorizar depois
@@ -425,14 +422,10 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
     if validação_porta == True and validação_senha == True and validação_qtd_p == True and validação_nome_gp == True:
         qtd_pessoas = int(qtd_pessoas)
 
-        if nome_gp != False:
-            #Abaixo mandamos para o server, a mensagem contendo os 5 parametros abaixo, para o chat criar um novo chat com base nessas informações
-            message = f'{nmr_porta}+{senha}+{qtd_pessoas}+{pedido}+{nome_gp}'
-            connection.send(message.encode())
-        else:
-             #Abaixo mandamos para o server, a mensagem contendo os 5 parametros abaixo, para o chat permitir entrada no chat com base nessas informações
-            message = f'{nmr_porta}+{senha}+{qtd_pessoas}+{pedido}+{nome_gp}'
-            connection.send(message.encode())
+        
+        #Abaixo mandamos para o server, a mensagem contendo os 5 parametros abaixo, para o chat criar/entrar um chat com base nessas informações
+        message = f'{nmr_porta}+{senha}+{qtd_pessoas}+{pedido}+{nome_gp}+{name}'
+        connection.send(message.encode())
 
         escutando = True
         connection.settimeout(4) #Escuta por no maximo 4s se conseguiu fazer conexão com o server
@@ -609,7 +602,7 @@ def Inicio(): #Nesta janela o usuário escolherá se prefere criar um grupo, ent
     conect_chat_button.pack(padx=20)
 
 
-def Conectar_ao_servidor(name_entry,window_antiga):
+def Conectar_ao_servidor(name_entry,window_antiga,erro_de_nome=False):
     def Teste_conexão(): #Abaixo, será feito uma tentativa de comunicação com o servidor
         global ip_server
         ip_server, validação = Tratar_input(input_ip_servidor.get(),'ipv4',window,True,False,False,15,7,False)
@@ -619,36 +612,60 @@ def Conectar_ao_servidor(name_entry,window_antiga):
                 connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 connection.connect((ip_server, 3000))
 
-                Inicio()
+                Teste_nome()
             except (ConnectionRefusedError, TimeoutError, OSError) as e: #Tela de erro ao conectar ao ip do server
                 Tratar_janela_erro(window,'400x127',3,['Aviso!!','- Não foi possivel estabelecer a conexão com o servidor!','- Verifique se o ipv4 do servidor foi digitado corretamente!'],
                                    [('Arial',13, 'bold'),('Arial',11),('Arial',11)],
                                    [(5),(0),(0)])
             return
     
-    global name 
-    name, validação = Tratar_input(name_entry,'nome',window_antiga,False,False,True,16,False,False)
-    if validação == True: #Após validar o nome, pedirá o ipv4 do server
-        window = Gerenciar_Janela('Delete e crie',{'dimensoes':'300x127', 'alinhamento_tela' : 'centralizado'},'Conecte ao Servidor')
+    def Teste_nome():
+        connection.send(f'Nome:{name}'.encode())
+        rodar = True
+        while rodar:
+            Confirmação = connection.recv(1024).decode()
+            if Confirmação == 'Nome Autorizado!':
+                Inicio()
+                rodar = False
+            if Confirmação == 'Nome já escolhido por outro usuario!':
+                Tratar_janela_erro(window_antiga, '400x127', 2, ['Aviso!!','- Nome já usado por outro usuario!']
+                    , [('Arial',13, 'bold'),('Arial',11)] , [(5),(0)])
+                Entrada(True)
+                rodar = False
+    
+    global name
+    if erro_de_nome == True:
+        name, validação = Tratar_input(name_entry,'nome',window_antiga,False,False,True,16,False,False)
+        if validação == True:
+            Teste_nome()
+    else: 
+        name, validação = Tratar_input(name_entry,'nome',window_antiga,False,False,True,16,False,False)
+        if validação == True: #Após validar o nome, pedirá o ipv4 do server
+            window = Gerenciar_Janela('Delete e crie',{'dimensoes':'300x127', 'alinhamento_tela' : 'centralizado'},'Conecte ao Servidor')
 
-        box = tk.Frame(window)
-        box.pack()
+            box = tk.Frame(window)
+            box.pack()
 
-        label_servidor = ttk.Label(box, text='Insira o ipv4 do servidor abaixo:')
-        label_servidor.pack(pady=5)
+            label_servidor = ttk.Label(box, text='Insira o ipv4 do servidor abaixo:')
+            label_servidor.pack(pady=5)
 
-        input_ip_servidor = ttk.Entry(box)
-        input_ip_servidor.pack()
+            input_ip_servidor = ttk.Entry(box)
+            input_ip_servidor.pack()
 
-        button_servidor = ttk.Button(box, text='Confirmar',command= lambda:Teste_conexão())
-        button_servidor.pack(pady=10)
+            button_servidor = ttk.Button(box, text='Confirmar',command= lambda:Teste_conexão())
+            button_servidor.pack(pady=10)
 
-        input_ip_servidor.focus_set()  # Define o foco para o Entry do nome do usuário
-        input_ip_servidor.bind("<Return>", lambda event: button_servidor.invoke())
+            input_ip_servidor.focus_set()  # Define o foco para o Entry do nome do usuário
+            input_ip_servidor.bind("<Return>", lambda event: button_servidor.invoke())
 
 
-def Entrada(): #Criará a janela inicial, pedindo o nome do usuario como entrada, além de carregar os widgets necessários
-    window = Gerenciar_Janela('Crie',
+def Entrada(Nome_ja_usado=False): #Criará a janela inicial, pedindo o nome do usuario como entrada, além de carregar os widgets necessários
+    if Nome_ja_usado == True:
+        window = Gerenciar_Janela('Delete e crie',
+                              {'dimensoes':'300x127', 'alinhamento_tela' : 'centralizado'},
+                              "Nome do Usuário")
+    else:
+        window = Gerenciar_Janela('Crie',
                               {'dimensoes':'300x127', 'alinhamento_tela' : 'centralizado'},
                               "Nome do Usuário")
 
@@ -660,7 +677,10 @@ def Entrada(): #Criará a janela inicial, pedindo o nome do usuario como entrada
 
     label = ttk.Label(box, text="Digite seu nome:",font=('Arial', 10, 'bold'))
     name_entry = ttk.Entry(box)
-    enter_button = ttk.Button(box2, text="Confirmar", command=lambda: Conectar_ao_servidor(name_entry.get(),window)) #Programar que o comando 'enter' faça o mesmo que clicar no botao
+    if Nome_ja_usado == False:
+        enter_button = ttk.Button(box2, text="Confirmar", command=lambda: Conectar_ao_servidor(name_entry.get(),window)) #Programar que o comando 'enter' faça o mesmo que clicar no botao
+    if Nome_ja_usado == True:
+        enter_button = ttk.Button(box2, text="Confirmar", command=lambda: Conectar_ao_servidor(name_entry.get(),window,True)) #Programar que o comando 'enter' faça o mesmo que clicar no botao
 
     box.pack(pady=15)
     box2.pack()

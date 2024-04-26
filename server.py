@@ -4,6 +4,7 @@ import pyperclip
 import os
 import time
 
+nome_usuarios = []
 usuarios_conexão_basica = [] #Lista dos usuários que fizeram a primeira conexão com o server
 conexão_primaria_interligada_com_conexão_chat = {}
 portas = {} #Dicionario das portas abertas com sucesos, contendo : portas['nmr_porta'] : {senha, qtd_max_pessoas, nome_gp, lista_dos_cliente_conectados_ao_chat[] }
@@ -14,12 +15,13 @@ if not os.path.exists(pasta_arquivos):
     os.makedirs(pasta_arquivos)
 SAVE_FOLDER = pasta_arquivos
 
-def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,socket_primario_client):
+def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,nome_cliente,socket_primario_client):
     def comunicacao(socket_do_client_chat,path_pasta_de_arquivos_da_porta):
         while True: #Esse looping é para: Receber as mensagens pelos clientes e enviar a todos do grupo
             try:
                 mensagem_do_chat = socket_do_client_chat.recv(1024).decode()
                 if "Protocolo_close" in mensagem_do_chat: #Ao cliente avisar que desconectará, o server remove do chat e fecha conexão
+                    nome_usuarios.remove(nome_cliente)
                     portas[nmr_porta][3].remove(socket_do_client_chat)
                     socket_do_client_chat.close()
                     conexão_primaria_interligada_com_conexão_chat[socket_do_client_chat].close()
@@ -160,8 +162,16 @@ def escuta_solicitacao_primaria(client_socket,id_cliente):
             mensagem = client_socket.recv(1024).decode()
             if not mensagem:
                 break
-            msg = mensagem.split('+') 
-            Create_chat(msg[0],msg[1],msg[2],msg[3],msg[4],client_socket) # nmr_porta,senha,qtd_max_pessoas,nome_gp, e o client_socket
+            elif 'Nome:' in mensagem:
+                mensagem = mensagem.split(':') #mensagem[1] é o nome do cliente
+                if (len(nome_usuarios) == 0) or (mensagem[1] not in nome_usuarios) :
+                    nome_usuarios.append(mensagem[1])
+                    client_socket.send('Nome Autorizado!'.encode()) 
+                else: #Nome usuario já está foi escolhido no server
+                    client_socket.send('Nome já escolhido por outro usuario!'.encode())
+            else:
+                msg = mensagem.split('+') 
+                Create_chat(msg[0],msg[1],msg[2],msg[3],msg[4],msg[5],client_socket) # nmr_porta,senha,qtd_max_pessoas,nome_gp,nome do cliente, e o client_socket
         except ConnectionError:
             break
     
@@ -174,7 +184,7 @@ def Pareamento_inicial():
     ipv4_address = socket.gethostbyname(hostname)
 
     server_pareamento_inicial.bind((str(ipv4_address), 3000)) #associa o socket a um endereço ip e porta
-    server_pareamento_inicial.listen(5) #servidor aceita até no maximo 5 conexões de clientes simultaneas
+    server_pareamento_inicial.listen(8) #servidor aceita até no maximo 8 conexões de clientes simultaneas
     print(f'Servidor aguardando conexões...')
     print(f'IPv4 do servidor já está copiado na area de transferencia! ({ipv4_address})')
     pyperclip.copy(ipv4_address) #copia (como se fosse ctrl+c) no ipv4 do server, não precisa mais copiar do terminal do servidor
