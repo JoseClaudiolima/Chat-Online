@@ -13,9 +13,9 @@ import os
 
 #Passo 1: Coloque o nome
 #Passo 2: Coloque o ipv4 do server, ja copia automaticamente no server.py
-#Passo 3: Selecione a opção de criar chat que deseja
-#Passo 4: Coloque uma porta desejada, acho que entre #1025 a 49152 não da erro, ainda falta previnir erro disto
-#Passo 5: Escolha uma senha
+#Passo 3: Selecione a opção de criar chat que deseja, ou entre em um
+#Passo 4: Coloque uma porta que for de interesse
+#Passo 5: Escolha/Insira uma senha
 
 run = []
 
@@ -119,7 +119,7 @@ def Tratar_input(string,id,window_antiga,pode_numero,pode_char_esp,pode_char_alf
             ttk.Label(window_erro,text=f'- É necessário que o(a) {id} contenha até {limite_max_char} caracteres!',font=('Arial',10,'bold'),wraplength=300,background='white').pack()
         window_erro.protocol("WM_DELETE_WINDOW", lambda:(
             window_antiga.deiconify(),
-            window_erro.destroy() )) # Adiciona um evento ao fechar a janela
+            window_erro.destroy() ))
         return string, False
     return string, True
 
@@ -130,7 +130,7 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
         msg_close = f"Protocolo_close,{name}"
         Enviar_mensagem(msg_close,True) #Avisa ao server, que o client desconectou
         Thread_receber.join()
-        time.sleep(1) #Coloquei isso para resolver um bug em que era enviado a msg ao server que fechou a conexão, porém a msg nem chegava ao server, e a linha cliente_socket.close(), já fechava o socket antes da msg chegar no server 
+        time.sleep(1) #Soluciona bug em que era enviado a msg ao server que fechou a conexão, porém a msg nem chegava ao server, e a linha cliente_socket.close(), já fechava o socket antes da msg chegar no server 
         cliente_socket.close() #Cliente se desconecta de fato
         connection.close()#Fecha a primeira conexão com o servidor
 
@@ -149,7 +149,7 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
             if admin != None:
                 cifra = f'{admin}{rsa.cifrar(mensagem,28837,40301)}'
             else:
-                cifra = rsa.cifrar(mensagem,28837,40301) #Está com chave já selecionada, podemos aleatorizar depois
+                cifra = rsa.cifrar(mensagem,28837,40301) #Está com chave já selecionada
             cliente_socket.send(cifra.encode()) #a mensagem é enviada nessa linha ao servidor, usando sockets
             message_input.delete(0, tk.END)
         widget_emoji(chat_display,'Desapareça')
@@ -174,7 +174,7 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
         Enviar_mensagem(f'{filename}',f'arquivo {tamanho_arquivo} nmr_arquivo ')
 
     def Bind_tag_arquivo(tag,tamanho_arquivo):
-        def mostrar_info_arquivo(event,info):
+        def mostrar_info_arquivo(event,info): #Essa Função é para mostrar a QTD de bytes do arquivo que foi enviado no chat, se pousar o mouse sobre, mostra a qtd
             global popup_window
             popup_window = tk.Toplevel(chat_box)
             popup_window.wm_overrideredirect(True)  # Remove a decoração da janela
@@ -217,14 +217,14 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
                         break
                     arq.write(dados)
                     tamanho_arquivo -= len(dados)
-            print('Download do cliente com sucesso!')
+            print('Download do arquivo com sucesso!')
             Receber_mensagens()
 
         rodar = True
         while rodar:
             try:
                 mensagem = cliente_socket.recv(1024).decode() #Decodificará a mensagem por padrão do servidor
-                if 'Baixar:' in mensagem: #Se cliente clientou na representação do arquivo no chat, ele será redirecionado na função que fará o download do arquivo
+                if 'Baixar:' in mensagem: #Se cliente clicou na representação do arquivo no chat, ele será redirecionado na função que fará o download do arquivo
                     Receber_arquivo(mensagem)
                     continue
 
@@ -245,7 +245,7 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
                     chat_display.insert(tk.END, f'{mensagem}\n', 'left entrada')
                     chat_display.configure(state='disabled')
                     continue
-                msg_decifrada = rsa.decifrar(mensagem,40301,12973) #Está com chave já selecionada, podemos aleatorizar depois
+                msg_decifrada = rsa.decifrar(mensagem,40301,12973) #Está com chave já selecionada
                 msg_decifrada = msg_decifrada.split(f" {format(math.pi, '.10f')} ")
                 if msg_decifrada[0]: 
                     if chat_window.winfo_exists(): #Checa se ainda existe o chat_window, pode ter sido fechado pela primeira tread 
@@ -480,7 +480,6 @@ def Chat_App(nmr_porta,senha,qtd_pessoas,nome_gp,window_antiga,pedido):
                     conexao_validacao = True
                     break
             except (ConnectionError,ConnectionRefusedError, TimeoutError, OSError, BlockingIOError, socket.error, socket.timeout) as a:
-                    print(f'Erro: {a}') #Pode apagar isso antes de entregar a aps
                     escutando = False
                     conexao_validacao = False
                     return
@@ -681,7 +680,7 @@ def Entrada(Nome_ja_usado=False): #Criará a janela inicial, pedindo o nome do u
                               "Nome do Usuário")
 
     style = ttk.Style() 
-    style.configure('TButton', font=('Arial', 10)) #ttk.button não aceita alterar font facilmente igual o label
+    style.configure('TButton', font=('Arial', 10))
 
     box = tk.Frame(window)
     box2 = tk.Frame(window)
@@ -689,9 +688,9 @@ def Entrada(Nome_ja_usado=False): #Criará a janela inicial, pedindo o nome do u
     label = ttk.Label(box, text="Digite seu nome:",font=('Arial', 10, 'bold'))
     name_entry = ttk.Entry(box)
     if Nome_ja_usado == False:
-        enter_button = ttk.Button(box2, text="Confirmar", command=lambda: Conectar_ao_servidor(name_entry.get(),window)) #Programar que o comando 'enter' faça o mesmo que clicar no botao
+        enter_button = ttk.Button(box2, text="Confirmar", command=lambda: Conectar_ao_servidor(name_entry.get(),window))
     if Nome_ja_usado == True:
-        enter_button = ttk.Button(box2, text="Confirmar", command=lambda: Conectar_ao_servidor(name_entry.get(),window,True)) #Programar que o comando 'enter' faça o mesmo que clicar no botao
+        enter_button = ttk.Button(box2, text="Confirmar", command=lambda: Conectar_ao_servidor(name_entry.get(),window,True))
 
     box.pack(pady=15)
     box2.pack()

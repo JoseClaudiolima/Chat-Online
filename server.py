@@ -5,7 +5,6 @@ import os
 import time
 
 nome_usuarios = []
-usuarios_conexão_basica = [] #Lista dos usuários que fizeram a primeira conexão com o server
 conexão_primaria_interligada_com_conexão_chat = {}
 portas = {} #Dicionario das portas abertas com sucesos, contendo : portas['nmr_porta'] : {senha, qtd_max_pessoas, nome_gp, lista_dos_cliente_conectados_ao_chat[] }
 #Abaixo, é para criar uma pasta em que conterá os arquivos usados no chat
@@ -29,10 +28,8 @@ def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,nome_cliente,sock
                     if len(portas[nmr_porta][3]) == 0: #Se o client for o ultimo do chat, o server fecha o chat, e libera a porta para ser criado por outros
                         for nome_arquivo in os.listdir(portas[nmr_porta][4]): # loop percorre todos os arquivos da pasta, para deleta-la
                             caminho_arquivo = os.path.join(portas[nmr_porta][4], nome_arquivo)
-                            # Exclua o arquivo
-                            os.remove(caminho_arquivo)
-                        # Deleta a pasta vazia
-                        os.rmdir(portas[nmr_porta][4])
+                            os.remove(caminho_arquivo)# Exclui os arquivos da pasta
+                        os.rmdir(portas[nmr_porta][4])# Deleta a pasta vazia
                         del portas[nmr_porta]
                     else: #Se tiver ainda clientes na porta, o servidor avisará que tal cliente saiu
                         mensagem_do_chat = mensagem_do_chat.split(',')
@@ -87,7 +84,7 @@ def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,nome_cliente,sock
                 for c in portas[nmr_porta][3]: #Nesse looping: Para cada usuario do grupo, será enviado a mensagem em questão
                     try:
                         c.send(mensagem_do_chat.encode())
-                        #print(mensagem_do_chat) #Este print prova que a criptografia é de ponta a ponta, o server não tem a mensagem descriptografada
+                        #print(mensagem_do_chat) #Este print prova que a criptografia é de ponta a ponta, o server não tem a mensagem decifrada
                     except ConnectionError:
                         continue
             except ConnectionError:
@@ -115,7 +112,7 @@ def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,nome_cliente,sock
             server_teste_pareamento_direto.close()
         except (ConnectionRefusedError, TimeoutError, OSError):
             with server_teste_pareamento_direto: #fecha completamente o socket de teste
-                #Caso tenha dado erro, "o with:" é como se fosse um apoio ao .close() .Pois apenas o .close() não foi o suficiente para finalizar o socket
+                #Caso tenha dado erro, "o with:" é como se fosse um apoio ao .close() .Pois apenas o .close() não foi o suficiente para finalizar o socket em testes realizados
                 socket_primario_client.send('Recusado, Porta nao disponivel'.encode())
                 server_teste_pareamento_direto.close()
             return
@@ -126,7 +123,6 @@ def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,nome_cliente,sock
             server_pareamento_direto.bind((str(ipv4_address), int(nmr_porta))) #Ao ver que foi possivel abrir neste ip / porta, agora será aberto de fato em um socket definitivo
             server_pareamento_direto.listen(int(qtd_max_pessoas))
 
-            #portas[nmr_porta] = [senha, qtd_max_pessoas,nome_gp, [] ] #ex: portas[8888] >> {123,'20',grupo da familia, [] }  #Esse [] é para listar os sockets dos clientes conectados nessa porta
             pasta_arquivos_da_porta = os.path.join(SAVE_FOLDER, str(nmr_porta)) 
             if not os.path.exists(pasta_arquivos_da_porta):
                 os.makedirs(pasta_arquivos_da_porta)   
@@ -145,7 +141,6 @@ def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,nome_cliente,sock
             portas[nmr_porta][3].append(client_socket_no_chat)      
             conexão_primaria_interligada_com_conexão_chat[client_socket_no_chat] = socket_primario_client
             #Abaixo será criada uma thread para cada cliente que estará no chat, fazendo que esse cliente receba as mensagens por checagem própria
-            #Checar depois se é isso mesmo
             client_thread_chat = threading.Thread(target=comunicacao, args=(client_socket_no_chat,portas[nmr_porta][4],))
             client_thread_chat.start()
         else:
@@ -155,10 +150,8 @@ def Create_chat(nmr_porta,senha,qtd_max_pessoas,pedido,nome_gp,nome_cliente,sock
 
 
 def escuta_solicitacao_primaria(client_socket,id_cliente):
-    usuarios_conexão_basica.append(client_socket)
-    usuarios_conexão_basica.append(id_cliente)
-    while True: #Esse looping é para: atender os 'comandos' do cliente, por enquanto só tem um comando, que é para criar um chat entre 2 pessoas
-                #Esse looping é para: ou seja, entrará em looping recebendo as info, e criando novo chat com base nas info dos cliente
+    while True: #Esse looping é para: atender os 'comandos' do cliente, por enquanto só tem um comando
+                #ou seja, entrará em looping recebendo as info, e criando novo chat com base nas info dos cliente
         try:
             mensagem = client_socket.recv(1024).decode()
             if not mensagem:
@@ -172,12 +165,13 @@ def escuta_solicitacao_primaria(client_socket,id_cliente):
                     client_socket.send('Nome já escolhido por outro usuario!'.encode())
             else:
                 msg = mensagem.split('+') 
-                Create_chat(msg[0],msg[1],msg[2],msg[3],msg[4],msg[5],client_socket) # nmr_porta,senha,qtd_max_pessoas,nome_gp,nome do cliente, e o client_socket
+                Create_chat(msg[0],msg[1],msg[2],msg[3],msg[4],msg[5],client_socket) # nmr_porta,senha,qtd_max_pessoas,comando (criar grupo ou entrar em grupo),nome_gp,nome do cliente, e o client_socket, respectivamente
+                print(msg)
         except ConnectionError:
             break
     
 
-#Aqui é só para conectar o client no server
+#Aqui é só para conectar o client no server inicialmente
 def Pareamento_inicial():
     server_pareamento_inicial = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #cria um obj socket, de conexão tcp ip
     hostname = socket.gethostname()
@@ -185,7 +179,7 @@ def Pareamento_inicial():
     ipv4_address = socket.gethostbyname(hostname)
 
     server_pareamento_inicial.bind((str(ipv4_address), 3000)) #associa o socket a um endereço ip e porta
-    server_pareamento_inicial.listen(8) #servidor aceita até no maximo 8 conexões de clientes simultaneas
+    server_pareamento_inicial.listen(8) #servidor aceita até no maximo 8 conexões de clientes simultaneas, se quiser mais basta alterar esse numero
     print(f'Servidor aguardando conexões...')
     print(f'IPv4 do servidor já está copiado na area de transferencia! ({ipv4_address})')
     pyperclip.copy(ipv4_address) #copia (como se fosse ctrl+c) no ipv4 do server, não precisa mais copiar do terminal do servidor
